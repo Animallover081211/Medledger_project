@@ -1,0 +1,13 @@
+fabric-samples/
+medlegder-frontend/.env
+medlegder-frontend/local.db
+medledger-chain-go/medledger
+medledger-chain-go/medledger.tar.gz
+*.pb
+config_block.json
+config_update.json
+config_update.tx
+config_update_in_envelope.json
+current_config.json
+modified_config.json
+original_config.json

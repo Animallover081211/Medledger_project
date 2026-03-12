@@ -1,0 +1,60 @@
+MedLedger is a secure digital health system that uses blockchain technology to give patients full control over who can access their medical records. The system replaces traditional centralised consent mechanisms with a decentralised, tamper-proof blockchain ledger that enforces consent, verifies access permissions, and permanently records all access events.
+
+The primary objective of MedLedger is to demonstrate how blockchain can improve privacy, security, auditability, and patient autonomy in digital healthcare environments.
+
+-
+
+System Scenario and How It Works
+
+The system operates through a web application connected to a blockchain network. It supports three main roles: patients, doctors, and the blockchain ledger.
+
+First, a patient registers on the system and receives a unique digital identity stored on the blockchain. Similarly, doctors register and receive verified identities. These identities allow the blockchain to securely recognize and authenticate participants.
+
+When a doctor needs access to a patient’s medical record, the doctor submits an access request through the system. The blockchain then checks whether valid consent exists.
+
+If the patient has not granted consent, the request is automatically denied, ensuring that no unauthorized access is possible.
+
+The patient can log into the system and explicitly grant consent to a doctor. Once granted, this consent is recorded permanently on the blockchain with a timestamp and cryptographic verification. After consent is granted, the doctor can access the patient’s medical record.
+
+Every access attempt whether successful or denied is recorded on the blockchain as an immutable audit log. This ensures full transparency and accountability.
+
+If the patient later decides to revoke consent, the blockchain immediately enforces this decision, and the doctor’s access is revoked automatically.
+
+The system also includes an emergency access mechanism. In emergency situations where the patient cannot provide consent, authorized medical personnel can request emergency access. The blockchain allows access but records the event permanently as an emergency access entry, ensuring it can be reviewed later to prevent misuse.
+
+
+Technical Architecture
+
+The MedLedger system consists of four integrated components:
+
+* A blockchain network (Hyperledger Fabric) that securely stores identities, consent records, and audit logs
+* A backend server that manages communication between the web application and blockchain
+* A frontend web application that allows patients and doctors to interact with the system
+* A secure database that stores encrypted medical record data, with access controlled by blockchain consent verification
+
+The blockchain acts as the trust layer, ensuring that all consent and access control decisions are secure, verifiable, and tamper-proof.
+
+
+Expected Final Outcome
+
+The final system will be a fully functional prototype demonstrating real blockchain-based healthcare consent management.
+
+Users will be able to:
+
+* Register as patients or doctors
+* Grant and revoke consent securely
+* Request access to medical records
+* Verify access permissions automatically
+* View permanent blockchain audit logs
+* Perform emergency access with full audit tracking
+
+The system will demonstrate how blockchain can enforce patient-controlled access while improving transparency, accountability, and security.
+
+
+Project Contribution and Significance
+
+MedLedger demonstrates a practical implementation of blockchain for digital health consent management. Unlike theoretical research models, this project provides a fully operational prototype that integrates blockchain, smart contracts, web applications, and secure data storage into a single working system.
+
+This project contributes to the field of digital health by showing how decentralised technologies can enhance patient autonomy, prevent unauthorised access, and provide verifiable audit trails in healthcare systems.
+
+The result is a secure, transparent, and patient-centric digital health access control system powered by blockchain technology.

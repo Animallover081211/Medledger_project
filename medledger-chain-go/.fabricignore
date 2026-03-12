@@ -1,0 +1,17 @@
+vendor/**/testdata
+vendor/**/samples
+vendor/**/fixtures
+vendor/**/examples
+vendor/**/.git
+vendor/**/docs
+vendor/**/images
+vendor/**/coverage
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.pdf
+*.zip
+*.tar
+*.gz
