@@ -39,9 +39,12 @@ export default function CreateRecordPage() {
   const [patientId, setPatientId] = useState("");
   const [recordType, setRecordType] = useState("");
   const [saving, setSaving] = useState(false);
+  const [patients, setPatients] = useState<string[]>([]);
+  const [fetchingPatients, setFetchingPatients] = useState(false);
 
-  type KeyValue = { key: string; value: string };
-  const [keyValues, setKeyValues] = useState<KeyValue[]>([{ key: "", value: "" }]);
+  type KeyValue = { key: string; value: string; template?: string };
+  const [keyValues, setKeyValues] = useState<KeyValue[]>([{ key: "", value: "", template: "" }]);
+
 
   const [modal, setModal] = useState<{
     isOpen: boolean;
@@ -63,14 +66,27 @@ export default function CreateRecordPage() {
     setModal((prev) => ({ ...prev, isOpen: false }));
   };
 
+  const fetchPatients = useCallback(async () => {
+    setFetchingPatients(true);
+    try {
+      const result = await apiFetch("/api/doctor/patients");
+      setPatients(result.patients || []);
+    } catch {
+      setPatients([]);
+    } finally {
+      setFetchingPatients(false);
+    }
+  }, []);
+
   useEffect(() => {
     const identity = getIdentity();
     if (!identity || identity.role !== "doctor") {
       router.push("/");
       return;
     }
+    fetchPatients();
     queueMicrotask(() => setLoading(false));
-  }, [router]);
+  }, [router, fetchPatients]);
 
   const addKeyValue = () => {
     setKeyValues([...keyValues, { key: "", value: "" }]);
@@ -83,14 +99,19 @@ export default function CreateRecordPage() {
   const updateKeyValue = (index: number, field: "key" | "value", value: string) => {
     const updated = [...keyValues];
     updated[index][field] = value;
+    // Clear template name if user manual edits the fields
+    updated[index].template = "";
     setKeyValues(updated);
   };
 
   const applyTemplateForRow = (index: number, label: string) => {
     const template = COMMON_TEMPLATES.find(t => t.label === label);
     if (template) {
-      updateKeyValue(index, "key", template.key);
-      updateKeyValue(index, "value", template.value);
+      const updated = [...keyValues];
+      updated[index].key = template.key;
+      updated[index].value = template.value;
+      updated[index].template = label;
+      setKeyValues(updated);
     }
   };
 
@@ -162,13 +183,26 @@ export default function CreateRecordPage() {
           <div className="grid gap-4 pt-2">
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
-                <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-black/80">Target Patient ID</label>
-                <Input
-                  placeholder="patient-001"
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-[9px] font-black uppercase tracking-widest text-black/80">Target Patient ID</label>
+                  <button
+                    onClick={fetchPatients}
+                    disabled={fetchingPatients}
+                    className="text-[9px] font-black uppercase tracking-widest text-black/40 hover:text-black transition-all flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <span className={fetchingPatients ? "animate-spin" : ""}>↻</span> Refresh
+                  </button>
+                </div>
+                <Select
                   value={patientId}
-                  className="h-10 text-xs bg-neutral-50/50 border-none focus:ring-black placeholder:text-black/30"
+                  className="h-10 text-xs bg-neutral-50/50 border-none focus:ring-black font-bold uppercase tracking-tight"
                   onChange={(event) => setPatientId(event.target.value)}
-                />
+                >
+                  <option value="">Select Patient...</option>
+                  {patients.map(pid => (
+                    <option key={pid} value={pid}>{pid}</option>
+                  ))}
+                </Select>
               </div>
               <div>
                 <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-black/80">Record Classification</label>
@@ -194,9 +228,9 @@ export default function CreateRecordPage() {
                       <label className="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-black/40">Template</label>
                       <Select
                         className="h-9 py-0 px-2 text-[9px] w-full rounded-xl bg-white border-black/5 font-black uppercase tracking-tight shadow-sm"
+                        value={kv.template || ""}
                         onChange={(e) => {
                           applyTemplateForRow(index, e.target.value);
-                          e.target.value = "";
                         }}
                       >
                         <option value="">Quick Select...</option>

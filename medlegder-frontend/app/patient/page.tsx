@@ -200,14 +200,14 @@ export default function PatientPage() {
 
   return (
     <>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 pb-16">
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-1.5 h-1.5 bg-neutral-800 rounded-full animate-pulse"></span>
             <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-neutral-600">Patient Dashboard</p>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-black tracking-tight leading-none">Welcome, {patientName}</h1>
-          <p className="mt-1 text-[11px] text-black/60 font-mono">Ledger ID: {patientId}</p>
+          <p className="mt-1 text-sm text-black/60 font-mono">Ledger ID: {patientId}</p>
         </div>
 
         {pending.length > 0 && (
@@ -307,9 +307,9 @@ export default function PatientPage() {
         </div>
 
         <Card title="Audit History">
-          <div className="overflow-hidden pt-2">
+          <div className="overflow-y-auto pt-2 min-h-[400px] max-h-[600px] scrollbar-hide">
             {!Array.isArray(audit) || audit.length === 0 ? (
-              <div className="py-10 text-center">
+              <div className="flex items-center justify-center min-h-[400px]">
                 <p className="text-[11px] text-black/50 font-bold uppercase tracking-[0.2em]">Log is empty</p>
               </div>
             ) : (

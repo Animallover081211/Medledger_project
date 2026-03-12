@@ -19,6 +19,7 @@ export default function DoctorPage() {
   const [reason, setReason] = useState("");
   const [requestingAccess, setRequestingAccess] = useState(false);
   const [loggingEmergency, setLoggingEmergency] = useState(false);
+  const [grantedPatients, setGrantedPatients] = useState<string[]>([]);
 
   const [modal, setModal] = useState<{
     isOpen: boolean;
@@ -64,6 +65,10 @@ export default function DoctorPage() {
 
     if (identity?.id) {
       fetchDoctorInfo();
+      // Fetch granted patients inline to avoid dependency loop
+      apiFetch("/api/doctor/patients")
+        .then(result => setGrantedPatients(result.patients || []))
+        .catch(() => { });
     } else {
       queueMicrotask(() => setLoading(false));
     }
@@ -149,7 +154,7 @@ export default function DoctorPage() {
             <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-black/60">Provider Portal</p>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-black tracking-tight leading-none">Dr. {doctorName}</h1>
-          <p className="mt-1 text-[11px] text-black/60 font-medium">{doctorSpecialty} • ID: {doctorId}</p>
+          <p className="mt-1 text-sm text-black/60 font-medium">{doctorSpecialty} • ID: {doctorId}</p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 mb-8">
@@ -219,6 +224,25 @@ export default function DoctorPage() {
             </div>
           </Card>
         </div>
+
+        {grantedPatients.length > 0 && (
+          <Card title="Granted Consents" className="mt-4">
+            <div className="space-y-2 pt-2">
+              <p className="text-[10px] text-black/50 font-semibold italic mb-3">
+                Patients who have directly granted you access to their records.
+              </p>
+              {grantedPatients.map((pid) => (
+                <div key={pid} className="flex items-center gap-3 p-3 bg-neutral-50/70 rounded-2xl border border-black/[0.04]">
+                  <div className="w-8 h-8 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-center text-base">🧑‍⚕️</div>
+                  <div>
+                    <p className="text-xs font-bold text-black leading-none">{pid}</p>
+                    <p className="text-[9px] text-emerald-600 mt-1 font-black uppercase tracking-wider">✓ Access Granted</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
       </div>
 
       <Modal

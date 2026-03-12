@@ -1,16 +1,16 @@
 "use client";
 
-import {useState, useEffect} from "react";
-import {useRouter} from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {Shell} from "../components/layout/shell";
-import {Navbar} from "../components/layout/navbar";
-import {Card} from "../components/ui/card";
-import {Input} from "../components/ui/input";
-import {Button} from "../components/ui/button";
-import {Select} from "../components/ui/select";
-import {apiFetch} from "../../lib/api_client";
-import {getIdentity, setIdentity, clearIdentity, type IdentityRole} from "../../lib/identity";
+import { Shell } from "../components/layout/shell";
+import { Navbar } from "../components/layout/navbar";
+import { Card } from "../components/ui/card";
+import { Input } from "../components/ui/input";
+import { Button } from "../components/ui/button";
+import { Select } from "../components/ui/select";
+import { apiFetch } from "../../lib/api_client";
+import { getIdentity, setIdentity, clearIdentity, type IdentityRole } from "../../lib/identity";
 
 const SPECIALTIES = [
   "General Practice",
@@ -39,7 +39,7 @@ export default function RegisterPage() {
   const [specialty, setSpecialty] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [modal, setModal] = useState<{show: boolean; message: string; isError: boolean}>({
+  const [modal, setModal] = useState<{ show: boolean; message: string; isError: boolean }>({
     show: false,
     message: "",
     isError: false,
@@ -74,7 +74,7 @@ export default function RegisterPage() {
         body: JSON.stringify({
           role,
           name: name.trim(),
-          ...(role === "doctor" && specialty ? {specialty: specialty.trim()} : {}),
+          ...(role === "doctor" && specialty ? { specialty: specialty.trim() } : {}),
         }),
       });
 
@@ -92,7 +92,7 @@ export default function RegisterPage() {
         throw new Error(text);
       }
 
-      setIdentity({id: userId.trim(), role});
+      setIdentity({ id: userId.trim(), role });
       router.push(role === "doctor" ? "/doctor" : "/patient");
 
     } catch (err) {
@@ -166,10 +166,15 @@ export default function RegisterPage() {
 
             {status ? <p className="text-xs text-red-600">{status}</p> : null}
 
-            <p className="mt-4 border-t border-black/10 pt-4 text-xs text-black/50">
-              Already have an identity?{" "}
-              <Link href="/" className="font-semibold text-black underline">
-                Go to home
+            <p className="mt-4 border-t border-black/10 pt-4 text-xs text-black/50 flex items-center justify-between flex-wrap gap-2">
+              <span>
+                Already have an identity?{" "}
+                <Link href="/login" className="font-black text-black underline">
+                  Go to Login
+                </Link>
+              </span>
+              <Link href="/" className="font-semibold text-black/40 underline">
+                Home
               </Link>
             </p>
           </div>
@@ -181,7 +186,7 @@ export default function RegisterPage() {
           <div className="rounded-xl bg-white p-6 shadow-xl">
             <h3 className="text-lg font-semibold text-red-600">Registration Failed</h3>
             <p className="mt-2 text-sm text-black/70">{modal.message}</p>
-            <Button className="mt-4" onClick={() => setModal({show: false, message: "", isError: false})}>
+            <Button className="mt-4" onClick={() => setModal({ show: false, message: "", isError: false })}>
               OK
             </Button>
           </div>
