@@ -2,6 +2,9 @@
 
 This guide mirrors the repo scripts but uses manual Windows CMD steps. Do **not** run the `scripts/*.sh` files on Windows CMD.
 
+Replace `<you>` with your actual Windows username in every path (CMD and Git Bash).
+For example, if your username is `Alice`, use `C:\Users\Alice\Desktop\...` and `/c/Users/Alice/Desktop/...`.
+
 These instructions assume the repo is located at:
 
 `C:\Users\<you>\Desktop\hyperledgerassignment`
