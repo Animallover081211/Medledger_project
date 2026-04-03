@@ -71,14 +71,24 @@ export default function PharmacyHistoryPage() {
             <div className="space-y-3 pt-2">
               {history.length > 0 ? (
                 history.map((record, index) => (
-                  <div key={`${record.rxNumber}-${index}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white rounded-2xl border border-black/[0.04]">
-                    <div>
-                      <p className="text-sm font-black text-black">{record.rxNumber}</p>
-                      <p className="text-[10px] text-black/40">
-                        Status: {record.verificationStatus} • Verified by: {record.verifiedBy || "N/A"}{record.dispensedBy ? ` • Dispensed by: ${record.dispensedBy}` : ""}
+                  <div key={`${record.rxNumber}-${index}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 bg-white rounded-2xl border border-black/[0.04]">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm sm:text-base font-black text-black break-all">{record.rxNumber}</p>
+                      <p className="mt-2 text-[11px] sm:text-sm text-black/60 leading-relaxed font-semibold break-words">
+                        <span className="font-black text-black/80">Status:</span> {record.verificationStatus}
+                        {record.verifiedBy ? (
+                          <>
+                            {" "}• <span className="font-black text-black/80">Verified by:</span> <span className="text-black">{record.verifiedBy}</span>
+                          </>
+                        ) : null}
+                        {record.dispensedBy ? (
+                          <>
+                            {" "}• <span className="font-black text-black/80">Dispensed by:</span> <span className="text-black">{record.dispensedBy}</span>
+                          </>
+                        ) : null}
                       </p>
                     </div>
-                    <p className="text-[10px] text-black/50">
+                    <p className="text-[10px] sm:text-xs text-black/50 font-medium whitespace-nowrap">
                       {record.dispensedAt
                         ? new Date(record.dispensedAt).toLocaleString()
                         : record.verifiedAt

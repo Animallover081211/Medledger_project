@@ -29,6 +29,7 @@ export const POST = async (request: NextRequest) => {
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Verification failed";
-    return NextResponse.json({error: message}, {status: 500});
+    const status = message.toLowerCase().includes("already been dispensed") ? 409 : 500;
+    return NextResponse.json({error: message}, {status});
   }
 };

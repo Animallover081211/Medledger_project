@@ -16,6 +16,18 @@ type MedicalRecord = {
 };
 
 const RenderPayload = ({ data }: { data: Record<string, unknown> | unknown }) => {
+    const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+
+    const copyValue = async (value: string) => {
+        try {
+            await navigator.clipboard.writeText(value);
+            setCopyState("copied");
+            window.setTimeout(() => setCopyState("idle"), 1500);
+        } catch {
+            // ignore copy errors in the inline payload view
+        }
+    };
+
     if (typeof data !== 'object' || data === null) {
         return <p className="text-xs text-black/90 leading-relaxed p-4 bg-neutral-50 rounded-2xl border border-black/10">{String(data)}</p>;
     }
@@ -23,11 +35,26 @@ const RenderPayload = ({ data }: { data: Record<string, unknown> | unknown }) =>
     return (
         <div className="grid gap-2">
             {Object.entries(data as Record<string, unknown>).map(([key, value]) => {
-                const label = key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase());
+                const label = key === "RxNumber"
+                    ? "RX NUMBER"
+                    : key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase());
+                const renderedValue = key === "RxNumber" ? String(value).toUpperCase() : String(value);
+                const isRxNumber = key === "RxNumber";
                 return (
-                    <div key={key} className="flex justify-between items-center px-4 py-3 bg-neutral-50/50 border border-black/[0.08] rounded-2xl transition-colors hover:bg-white group/item">
+                    <div key={key} className="flex justify-between items-center gap-3 px-4 py-3 bg-neutral-50/50 border border-black/[0.08] rounded-2xl transition-colors hover:bg-white group/item">
                         <span className="text-[9px] font-bold text-black/50 uppercase tracking-wider group-hover/item:text-black/70 transition-colors">{label}</span>
-                        <span className="text-[11px] font-extrabold text-black">{String(value)}</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[11px] font-extrabold text-black break-all text-right">{renderedValue}</span>
+                            {isRxNumber && (
+                                <button
+                                    type="button"
+                                    onClick={() => copyValue(renderedValue)}
+                                    className="shrink-0 rounded-full border border-black/10 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-black/60 hover:bg-black hover:text-white transition-colors"
+                                >
+                                    {copyState === "copied" ? "Copied" : "Copy"}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 );
             })}

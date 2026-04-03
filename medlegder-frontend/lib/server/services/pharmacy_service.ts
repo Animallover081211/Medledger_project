@@ -28,6 +28,15 @@ const buildId = (prefix: string) => `${prefix}_${Date.now()}_${Math.random().toS
 export const verifyPrescription = async (rxNumber: string, verifiedBy: string): Promise<PharmacyPrescription> => {
   const now = Date.now();
   const id = buildId("rx");
+  const [existing] = await db
+    .select()
+    .from(pharmacy_prescriptions)
+    .where(eq(pharmacy_prescriptions.rx_number, rxNumber))
+    .limit(1);
+
+  if (existing?.verification_status === "dispensed") {
+    throw new Error(`Prescription ${rxNumber} has already been dispensed`);
+  }
 
   const [record] = await db
     .insert(pharmacy_prescriptions)

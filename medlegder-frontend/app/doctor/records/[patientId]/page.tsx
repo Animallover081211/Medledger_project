@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, ReactNode, use } from "react";
 import { useRouter } from "next/navigation";
 import { Modal } from "../../../components/ui/modal";
+import { Select } from "../../../components/ui/select";
 import { apiFetch } from "../../../../lib/api_client";
 import { getIdentity } from "../../../../lib/identity";
 
@@ -15,6 +16,18 @@ type MedicalRecord = {
 };
 
 const RenderPayload = ({ data }: { data: Record<string, unknown> | unknown }) => {
+    const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+
+    const copyValue = async (value: string) => {
+        try {
+            await navigator.clipboard.writeText(value);
+            setCopyState("copied");
+            window.setTimeout(() => setCopyState("idle"), 1500);
+        } catch {
+            // ignore copy errors in the inline payload view
+        }
+    };
+
     if (typeof data !== 'object' || data === null) {
         return <p className="text-xs text-indigo-950/90 leading-relaxed p-4 bg-indigo-50 rounded-2xl border border-indigo-100">{String(data)}</p>;
     }
@@ -22,11 +35,26 @@ const RenderPayload = ({ data }: { data: Record<string, unknown> | unknown }) =>
     return (
         <div className="grid gap-2">
             {Object.entries(data as Record<string, unknown>).map(([key, value]) => {
-                const label = key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase());
+                const label = key === "RxNumber"
+                    ? "RX NUMBER"
+                    : key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase());
+                const renderedValue = key === "RxNumber" ? String(value).toUpperCase() : String(value);
+                const isRxNumber = key === "RxNumber";
                 return (
-                    <div key={key} className="flex justify-between items-center px-4 py-3 bg-indigo-50/50 border border-indigo-100 rounded-2xl transition-colors hover:bg-white group/item">
+                    <div key={key} className="flex justify-between items-center gap-3 px-4 py-3 bg-indigo-50/50 border border-indigo-100 rounded-2xl transition-colors hover:bg-white group/item">
                         <span className="text-[9px] font-bold text-indigo-700/50 uppercase tracking-wider group-hover/item:text-indigo-700 transition-colors">{label}</span>
-                        <span className="text-[11px] font-extrabold text-indigo-950">{String(value)}</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-[11px] font-extrabold text-indigo-950 break-all text-right">{renderedValue}</span>
+                            {isRxNumber && (
+                                <button
+                                    type="button"
+                                    onClick={() => copyValue(renderedValue)}
+                                    className="shrink-0 rounded-full border border-indigo-200 px-2 py-1 text-[8px] font-black uppercase tracking-widest text-indigo-700/60 hover:bg-indigo-700 hover:text-white transition-colors"
+                                >
+                                    {copyState === "copied" ? "Copied" : "Copy"}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 );
             })}
@@ -39,6 +67,7 @@ export default function PatientRecordsPage({ params }: { params: Promise<{ patie
     const { patientId } = use(params);
     const [loading, setLoading] = useState(true);
     const [records, setRecords] = useState<MedicalRecord[]>([]);
+    const [recordTypeFilter, setRecordTypeFilter] = useState("all");
 
     const [modal, setModal] = useState<{
         isOpen: boolean;
@@ -93,6 +122,11 @@ export default function PatientRecordsPage({ params }: { params: Promise<{ patie
         }
     };
 
+    const recordTypes = Array.from(new Set(records.map((record) => record.record_type))).sort();
+    const visibleRecords = [...records]
+        .sort((a, b) => b.created_at - a.created_at)
+        .filter((record) => recordTypeFilter === "all" || record.record_type === recordTypeFilter);
+
     if (loading) {
         return (
             <div className="flex h-[60vh] items-center justify-center">
@@ -119,13 +153,38 @@ export default function PatientRecordsPage({ params }: { params: Promise<{ patie
                     <h1 className="text-xl sm:text-2xl font-black text-indigo-950 tracking-tight leading-none uppercase">{patientId}</h1>
                 </div>
 
+                <div className="mb-6 rounded-[2rem] border border-indigo-100 bg-white p-3 sm:p-4 shadow-sm">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                        <div className="flex-1">
+                            <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-widest text-indigo-700/70">Filter By Record Type</label>
+                            <Select
+                                value={recordTypeFilter}
+                                onChange={(e) => setRecordTypeFilter(e.target.value)}
+                                className="h-10 text-xs bg-indigo-50/40 border-none focus:ring-indigo-500"
+                            >
+                                <option value="all">All Types</option>
+                                {recordTypes.map((type) => (
+                                    <option key={type} value={type}>{type}</option>
+                                ))}
+                            </Select>
+                        </div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-indigo-600/50">
+                            Showing {visibleRecords.length} of {records.length}
+                        </div>
+                    </div>
+                </div>
+
                 <div className="grid gap-5 sm:gap-6">
                     {records.length === 0 ? (
                         <div className="border border-dashed border-indigo-200 rounded-3xl p-12 sm:p-20 text-center bg-white/50">
                             <p className="text-indigo-700/30 text-[11px] font-bold uppercase tracking-widest">No records found on the ledger</p>
                         </div>
+                    ) : visibleRecords.length === 0 ? (
+                        <div className="border border-dashed border-indigo-200 rounded-3xl p-12 sm:p-20 text-center bg-white/50">
+                            <p className="text-indigo-700/30 text-[11px] font-bold uppercase tracking-widest">No records match this type</p>
+                        </div>
                     ) : (
-                        records.sort((a, b) => b.created_at - a.created_at).map((rec) => (
+                        visibleRecords.map((rec) => (
                             <div
                                 key={rec.id}
                                 className="bg-white border border-indigo-100 overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] hover:shadow-2xl hover:shadow-indigo-100 transition-all group"

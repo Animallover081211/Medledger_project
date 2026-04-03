@@ -28,7 +28,7 @@ export default function DoctorPage() {
   const [requestingAccess, setRequestingAccess] = useState(false);
   const [loggingEmergency, setLoggingEmergency] = useState(false);
   const [refreshingPatients, setRefreshingPatients] = useState(false);
-  const [grantedPatients, setGrantedPatients] = useState<string[]>([]);
+  const [grantedPatients, setGrantedPatients] = useState<Array<{ id: string; name: string }>>([]);
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
 
   const [modal, setModal] = useState<{
@@ -106,6 +106,16 @@ export default function DoctorPage() {
     }
   };
 
+  const normalizePatients = (items: Array<string | { id: string; name: string }> | undefined) =>
+    (Array.isArray(items) ? items : [])
+      .map((item) => {
+        if (typeof item === "string") {
+          return { id: item, name: item };
+        }
+        return item && item.id ? item : null;
+      })
+      .filter((item): item is { id: string; name: string } => Boolean(item?.id));
+
   useEffect(() => {
     const identity = getIdentity();
     if (!identity || (identity.role !== "doctor" && identity.role !== "hospital")) {
@@ -122,7 +132,7 @@ export default function DoctorPage() {
       fetchPatients();
       // Fetch granted patients inline to avoid dependency loop
       apiFetch(role === "hospital" ? "/api/hospital/patients" : "/api/doctor/patients")
-        .then(result => setGrantedPatients(result.patients || []))
+        .then(result => setGrantedPatients(normalizePatients(result.patients)))
         .catch(() => { });
     } else {
       queueMicrotask(() => setLoading(false));
@@ -323,11 +333,12 @@ export default function DoctorPage() {
               <p className="text-[10px] text-black/50 font-semibold italic mb-3">
                 Patients who have directly granted you access to their records.
               </p>
-              {grantedPatients.map((pid) => (
-                <div key={pid} className="flex items-center gap-3 p-3 bg-indigo-50/70 rounded-2xl border border-indigo-100">
+              {grantedPatients.map((patient) => (
+                <div key={patient.id} className="flex items-center gap-3 p-3 bg-indigo-50/70 rounded-2xl border border-indigo-100">
                   <div className="w-8 h-8 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-center text-base">🧑‍⚕️</div>
                   <div>
-                    <p className="text-xs font-bold text-indigo-950 leading-none">{pid}</p>
+                    <p className="text-xs font-bold text-indigo-950 leading-none">{patient.name}</p>
+                    <p className="text-[9px] text-indigo-700/60 mt-1 font-mono tracking-normal">{patient.id}</p>
                     <p className="text-[9px] text-indigo-600 mt-1 font-black uppercase tracking-wider">✓ Access Granted</p>
                   </div>
                 </div>
