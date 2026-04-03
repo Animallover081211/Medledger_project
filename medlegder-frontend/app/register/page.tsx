@@ -248,24 +248,24 @@ export default function RegisterPage() {
       </main>
 
       {modal.show && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black/50">
-          <div className="rounded-xl bg-white p-6 shadow-xl">
+        <div className="fixed inset-0 flex items-end sm:items-center justify-center bg-black/50 px-3 py-3 sm:p-6">
+          <div className="w-full max-w-md max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl bg-white p-5 sm:p-6 shadow-xl">
             <h3 className={`text-lg font-semibold ${modal.isError ? "text-red-600" : "text-emerald-600"}`}>
               {modal.title}
             </h3>
-            <p className="mt-2 text-sm text-black/70">{modal.message}</p>
+            <p className="mt-2 text-sm text-black/70 break-words">{modal.message}</p>
             {!modal.isError && modal.generatedId && (
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-mono text-emerald-700">
+              <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-2">
+                <span className="rounded-full bg-emerald-50 px-3 py-2 text-xs font-mono text-emerald-700 break-all">
                   {modal.generatedId}
                 </span>
-                <Button type="button" variant="secondary" size="sm" onClick={copyGeneratedId}>
+                <Button type="button" variant="secondary" size="sm" onClick={copyGeneratedId} className="w-full sm:w-auto">
                   {copyState === "copied" ? "Copied" : "Copy ID"}
                 </Button>
               </div>
             )}
             <Button
-              className="mt-4"
+              className="mt-4 w-full"
               onClick={() => {
                 const nextRoute = modal.nextRoute;
                 setCopyState("idle");

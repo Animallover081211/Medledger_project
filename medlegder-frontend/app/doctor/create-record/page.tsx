@@ -34,17 +34,21 @@ const RECORD_TYPES = [
 ];
 type ProviderRole = "doctor" | "hospital";
 
+const buildPrescriptionRxNumber = () => `rx-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
 export default function CreateRecordPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [patientId, setPatientId] = useState("");
   const [recordType, setRecordType] = useState("");
-  const [verifiedPrescription, setVerifiedPrescription] = useState("");
+  const [prescriptionRxNumber, setPrescriptionRxNumber] = useState(() => buildPrescriptionRxNumber());
+  const [prescriptionMedicine, setPrescriptionMedicine] = useState("");
+  const [prescriptionDose, setPrescriptionDose] = useState("");
+  const [prescriptionQuantity, setPrescriptionQuantity] = useState("");
+  const [prescriptionInstructions, setPrescriptionInstructions] = useState("");
   const [saving, setSaving] = useState(false);
   const [patients, setPatients] = useState<Array<{ id: string; name: string }>>([]);
   const [fetchingPatients, setFetchingPatients] = useState(false);
-  const [verifiedPrescriptions, setVerifiedPrescriptions] = useState<Array<{ rxNumber: string; verifiedAt: string | null; verifiedBy: string | null }>>([]);
-  const [fetchingVerifiedPrescriptions, setFetchingVerifiedPrescriptions] = useState(false);
 
   type KeyValue = { key: string; value: string; template?: string };
   const [keyValues, setKeyValues] = useState<KeyValue[]>([{ key: "", value: "", template: "" }]);
@@ -91,20 +95,6 @@ export default function CreateRecordPage() {
     }
   }, []);
 
-  const fetchVerifiedPrescriptions = useCallback(async () => {
-    setFetchingVerifiedPrescriptions(true);
-    try {
-      const result = await apiFetch("/api/pharmacy/verified-prescriptions");
-      const list = Array.isArray(result.prescriptions) ? result.prescriptions : [];
-      setVerifiedPrescriptions(list);
-      setVerifiedPrescription((current) => current || list[0]?.rxNumber || "");
-    } catch {
-      setVerifiedPrescriptions([]);
-    } finally {
-      setFetchingVerifiedPrescriptions(false);
-    }
-  }, []);
-
   useEffect(() => {
     const identity = getIdentity();
     if (!identity || (identity.role !== "doctor" && identity.role !== "hospital")) {
@@ -112,9 +102,8 @@ export default function CreateRecordPage() {
       return;
     }
     fetchPatients(identity.role as ProviderRole);
-    fetchVerifiedPrescriptions();
     queueMicrotask(() => setLoading(false));
-  }, [router, fetchPatients, fetchVerifiedPrescriptions]);
+  }, [router, fetchPatients]);
 
   const addKeyValue = () => {
     setKeyValues([...keyValues, { key: "", value: "" }]);
@@ -152,8 +141,54 @@ export default function CreateRecordPage() {
       showModal("error", "Missing Record Type", "Please enter a record type");
       return;
     }
-    if (recordType === "Prescription" && !verifiedPrescription.trim()) {
-      showModal("error", "Missing Prescription", "Please select a pharmacy-verified prescription");
+    if (recordType === "Prescription" && !prescriptionMedicine.trim()) {
+      showModal("error", "Missing Medicine", "Please enter the medicine name");
+      return;
+    }
+    if (recordType === "Prescription" && !prescriptionDose.trim()) {
+      showModal("error", "Missing Dose", "Please enter the dosage or strength");
+      return;
+    }
+    if (recordType === "Prescription" && !prescriptionQuantity.trim()) {
+      showModal("error", "Missing Quantity", "Please enter the quantity");
+      return;
+    }
+
+    if (recordType === "Prescription") {
+      const payloadObj: Record<string, string> = {
+        RxNumber: prescriptionRxNumber.trim(),
+        Medicine: prescriptionMedicine.trim(),
+        Dose: prescriptionDose.trim(),
+        Quantity: prescriptionQuantity.trim(),
+        Instructions: prescriptionInstructions.trim(),
+      };
+      const payloadJson = JSON.stringify(payloadObj);
+
+      setSaving(true);
+      try {
+        const result = await apiFetch("/api/records", {
+          method: "POST",
+          body: JSON.stringify({ patientId: patientId.trim(), recordType: recordType.trim(), payload: payloadJson }),
+        });
+        if (result.allowed || result.status === "created") {
+          showModal("success", "Prescription Created", `Prescription ${prescriptionRxNumber} has been stored in the blockchain ledger.`);
+          setPatientId("");
+          setRecordType("");
+          setPrescriptionRxNumber(buildPrescriptionRxNumber());
+          setPrescriptionMedicine("");
+          setPrescriptionDose("");
+          setPrescriptionQuantity("");
+          setPrescriptionInstructions("");
+          setKeyValues([{ key: "", value: "" }]);
+        } else {
+          showModal("error", "Consent Required", "Patient has not granted consent for this transaction.");
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Record creation failed";
+        showModal("error", "Creation Failed", message);
+      } finally {
+        setSaving(false);
+      }
       return;
     }
 
@@ -167,9 +202,6 @@ export default function CreateRecordPage() {
     validKeyValues.forEach(kv => {
       payloadObj[kv.key.trim()] = kv.value.trim();
     });
-    if (recordType === "Prescription") {
-      payloadObj["Verified Prescription Rx"] = verifiedPrescription.trim();
-    }
     const payloadJson = JSON.stringify(payloadObj);
 
     setSaving(true);
@@ -182,7 +214,6 @@ export default function CreateRecordPage() {
         showModal("success", "Record Created", "Medical record has been stored in the blockchain ledger.");
         setPatientId("");
         setRecordType("");
-        setVerifiedPrescription("");
         setKeyValues([{ key: "", value: "" }]);
       } else {
         showModal("error", "Consent Required", "Patient has not granted consent for this transaction.");
@@ -217,6 +248,26 @@ export default function CreateRecordPage() {
 
         <Card title="Record Composition">
           <div className="grid gap-4 pt-2">
+            <div>
+              <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-indigo-900/80">Record Classification</label>
+              <Select
+                value={recordType}
+                className="h-10 text-xs bg-indigo-50/50 border-none focus:ring-indigo-500 font-bold uppercase tracking-tight"
+                onChange={(event) => {
+                  const nextType = event.target.value;
+                  setRecordType(nextType);
+                  if (nextType === "Prescription") {
+                    setPrescriptionRxNumber(buildPrescriptionRxNumber());
+                  }
+                }}
+              >
+                <option value="">Select Category...</option>
+                {RECORD_TYPES.map(type => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
+              </Select>
+            </div>
+
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <div className="flex items-center justify-between mb-1.5">
@@ -240,60 +291,77 @@ export default function CreateRecordPage() {
                   ))}
                 </Select>
               </div>
-              <div>
-                <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-indigo-900/80">Record Classification</label>
-                <Select
-                  value={recordType}
-                  className="h-10 text-xs bg-indigo-50/50 border-none focus:ring-indigo-500 font-bold uppercase tracking-tight"
-                  onChange={(event) => setRecordType(event.target.value)}
-                >
-                  <option value="">Select Category...</option>
-                  {RECORD_TYPES.map(type => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
-                </Select>
-              </div>
             </div>
 
-            <div className="rounded-[2rem] border border-indigo-100 bg-indigo-50/40 p-4">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <div>
-                  <label className="block text-[9px] font-black uppercase tracking-widest text-indigo-900/80">Verified Prescription</label>
-                  <p className="mt-1 text-[10px] text-indigo-700/60 font-medium">
-                    Available when the record type is set to prescription.
-                  </p>
+            {recordType === "Prescription" && (
+              <div className="rounded-[2rem] border border-indigo-100 bg-indigo-50/40 p-4 space-y-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <label className="block text-[9px] font-black uppercase tracking-widest text-indigo-900/80">Prescription Details</label>
+                    <p className="mt-1 text-[10px] text-indigo-700/60 font-medium">
+                      Enter the medication details before the pharmacy verifies the Rx.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPrescriptionRxNumber(buildPrescriptionRxNumber())}
+                    className="text-[9px] font-black uppercase tracking-widest text-indigo-600/60 hover:text-indigo-700 transition-all flex items-center gap-1"
+                  >
+                    ↻ Regenerate Rx
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={fetchVerifiedPrescriptions}
-                  disabled={fetchingVerifiedPrescriptions}
-                  className="text-[9px] font-black uppercase tracking-widest text-indigo-600/60 hover:text-indigo-700 transition-all flex items-center gap-1 disabled:opacity-50"
-                >
-                  <span className={fetchingVerifiedPrescriptions ? "animate-spin" : ""}>↻</span> Refresh
-                </button>
-              </div>
-              <Select
-                value={verifiedPrescription}
-                className="h-10 text-xs bg-white border-none focus:ring-indigo-500 font-bold"
-                onChange={(event) => setVerifiedPrescription(event.target.value)}
-              >
-                <option value="">
-                  {recordType === "Prescription"
-                    ? "Select a pharmacy-verified prescription"
-                    : "Select a verified prescription (used for prescription records)"}
-                </option>
-                {verifiedPrescriptions.map((prescription) => (
-                  <option key={prescription.rxNumber} value={prescription.rxNumber}>
-                    {prescription.rxNumber}
-                  </option>
-                ))}
-              </Select>
-              <p className="mt-2 text-[10px] text-indigo-700/60 font-medium">
-                Only prescriptions verified by pharmacy appear here.
-              </p>
-            </div>
 
-            <div className="mt-2">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                    <label className="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-indigo-600/60">Rx Number</label>
+                    <Input
+                      value={prescriptionRxNumber}
+                      readOnly
+                      className="h-10 text-[10px] bg-white border-indigo-100 font-bold shadow-sm font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-indigo-600/60">Medicine Name</label>
+                    <Input
+                      placeholder="e.g. Amoxicillin"
+                      value={prescriptionMedicine}
+                      className="h-10 text-[10px] bg-white border-indigo-100 font-bold shadow-sm"
+                      onChange={(e) => setPrescriptionMedicine(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-indigo-600/60">Dose / Strength</label>
+                    <Input
+                      placeholder="e.g. 500mg"
+                      value={prescriptionDose}
+                      className="h-10 text-[10px] bg-white border-indigo-100 font-bold shadow-sm"
+                      onChange={(e) => setPrescriptionDose(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-indigo-600/60">Quantity</label>
+                    <Input
+                      placeholder="e.g. 14 tablets"
+                      value={prescriptionQuantity}
+                      className="h-10 text-[10px] bg-white border-indigo-100 font-bold shadow-sm"
+                      onChange={(e) => setPrescriptionQuantity(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-indigo-600/60">Instructions</label>
+                    <Input
+                      placeholder="e.g. Twice daily after meals"
+                      value={prescriptionInstructions}
+                      className="h-10 text-[10px] bg-white border-indigo-100 font-bold shadow-sm"
+                      onChange={(e) => setPrescriptionInstructions(e.target.value)}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {recordType !== "Prescription" && (
+              <div className="mt-2">
               <label className="mb-3 block text-[9px] font-black uppercase tracking-widest text-indigo-900/80">Record Payload (Integrated Protocol)</label>
               <div className="space-y-3">
                 {keyValues.map((kv, index) => (
@@ -351,6 +419,7 @@ export default function CreateRecordPage() {
                 </button>
               </div>
             </div>
+            )}
 
             <div className="pt-4 mt-2 border-t border-indigo-100">
               <Button
@@ -364,7 +433,7 @@ export default function CreateRecordPage() {
                     Committing to Ledger...
                   </>
                 ) : (
-                  "Commit Record to Ledger"
+                  recordType === "Prescription" ? "Commit Prescription to Ledger" : "Commit Record to Ledger"
                 )}
               </Button>
             </div>
