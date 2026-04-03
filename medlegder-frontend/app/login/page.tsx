@@ -76,6 +76,15 @@ export default function LoginPage() {
         <Card title="Login">
           <div className="grid gap-4">
             <div>
+              <label className="mb-1 block text-xs font-black text-black uppercase tracking-widest">Role Identification</label>
+              <Select value={role} onChange={(e) => setRole(e.target.value as IdentityRole)}>
+                <option value="patient">Patient</option>
+                <option value="hospital">Hospital Doctor</option>
+                <option value="pharmacy">Pharmacy</option>
+                <option value="regulator">Regulator</option>
+              </Select>
+            </div>
+            <div>
               <label className="mb-1 block text-xs font-black text-black uppercase tracking-widest">Your ID</label>
               <Input
                 placeholder="patient-001 or doctor-001"
@@ -106,15 +115,6 @@ export default function LoginPage() {
                   {showPassword ? "Hide" : "Show"}
                 </Button>
               </div>
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-black text-black uppercase tracking-widest">Role Identification</label>
-              <Select value={role} onChange={(e) => setRole(e.target.value as IdentityRole)}>
-                <option value="patient">Patient</option>
-                <option value="hospital">Hospital Doctor</option>
-                <option value="pharmacy">Pharmacy</option>
-                <option value="regulator">Regulator</option>
-              </Select>
             </div>
             {error && <p className="text-xs text-red-600">{error}</p>}
             <Button onClick={handleLogin} disabled={loading}>

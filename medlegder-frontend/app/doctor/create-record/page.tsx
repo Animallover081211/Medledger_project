@@ -39,9 +39,12 @@ export default function CreateRecordPage() {
   const [loading, setLoading] = useState(true);
   const [patientId, setPatientId] = useState("");
   const [recordType, setRecordType] = useState("");
+  const [verifiedPrescription, setVerifiedPrescription] = useState("");
   const [saving, setSaving] = useState(false);
   const [patients, setPatients] = useState<Array<{ id: string; name: string }>>([]);
   const [fetchingPatients, setFetchingPatients] = useState(false);
+  const [verifiedPrescriptions, setVerifiedPrescriptions] = useState<Array<{ rxNumber: string; verifiedAt: string | null; verifiedBy: string | null }>>([]);
+  const [fetchingVerifiedPrescriptions, setFetchingVerifiedPrescriptions] = useState(false);
 
   type KeyValue = { key: string; value: string; template?: string };
   const [keyValues, setKeyValues] = useState<KeyValue[]>([{ key: "", value: "", template: "" }]);
@@ -88,6 +91,20 @@ export default function CreateRecordPage() {
     }
   }, []);
 
+  const fetchVerifiedPrescriptions = useCallback(async () => {
+    setFetchingVerifiedPrescriptions(true);
+    try {
+      const result = await apiFetch("/api/pharmacy/verified-prescriptions");
+      const list = Array.isArray(result.prescriptions) ? result.prescriptions : [];
+      setVerifiedPrescriptions(list);
+      setVerifiedPrescription((current) => current || list[0]?.rxNumber || "");
+    } catch {
+      setVerifiedPrescriptions([]);
+    } finally {
+      setFetchingVerifiedPrescriptions(false);
+    }
+  }, []);
+
   useEffect(() => {
     const identity = getIdentity();
     if (!identity || (identity.role !== "doctor" && identity.role !== "hospital")) {
@@ -95,8 +112,9 @@ export default function CreateRecordPage() {
       return;
     }
     fetchPatients(identity.role as ProviderRole);
+    fetchVerifiedPrescriptions();
     queueMicrotask(() => setLoading(false));
-  }, [router, fetchPatients]);
+  }, [router, fetchPatients, fetchVerifiedPrescriptions]);
 
   const addKeyValue = () => {
     setKeyValues([...keyValues, { key: "", value: "" }]);
@@ -134,6 +152,10 @@ export default function CreateRecordPage() {
       showModal("error", "Missing Record Type", "Please enter a record type");
       return;
     }
+    if (recordType === "Prescription" && !verifiedPrescription.trim()) {
+      showModal("error", "Missing Prescription", "Please select a pharmacy-verified prescription");
+      return;
+    }
 
     const validKeyValues = keyValues.filter(kv => kv.key.trim() !== "");
     if (validKeyValues.length === 0) {
@@ -145,6 +167,9 @@ export default function CreateRecordPage() {
     validKeyValues.forEach(kv => {
       payloadObj[kv.key.trim()] = kv.value.trim();
     });
+    if (recordType === "Prescription") {
+      payloadObj["Verified Prescription Rx"] = verifiedPrescription.trim();
+    }
     const payloadJson = JSON.stringify(payloadObj);
 
     setSaving(true);
@@ -157,6 +182,7 @@ export default function CreateRecordPage() {
         showModal("success", "Record Created", "Medical record has been stored in the blockchain ledger.");
         setPatientId("");
         setRecordType("");
+        setVerifiedPrescription("");
         setKeyValues([{ key: "", value: "" }]);
       } else {
         showModal("error", "Consent Required", "Patient has not granted consent for this transaction.");
@@ -227,6 +253,44 @@ export default function CreateRecordPage() {
                   ))}
                 </Select>
               </div>
+            </div>
+
+            <div className="rounded-[2rem] border border-indigo-100 bg-indigo-50/40 p-4">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <div>
+                  <label className="block text-[9px] font-black uppercase tracking-widest text-indigo-900/80">Verified Prescription</label>
+                  <p className="mt-1 text-[10px] text-indigo-700/60 font-medium">
+                    Available when the record type is set to prescription.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchVerifiedPrescriptions}
+                  disabled={fetchingVerifiedPrescriptions}
+                  className="text-[9px] font-black uppercase tracking-widest text-indigo-600/60 hover:text-indigo-700 transition-all flex items-center gap-1 disabled:opacity-50"
+                >
+                  <span className={fetchingVerifiedPrescriptions ? "animate-spin" : ""}>↻</span> Refresh
+                </button>
+              </div>
+              <Select
+                value={verifiedPrescription}
+                className="h-10 text-xs bg-white border-none focus:ring-indigo-500 font-bold"
+                onChange={(event) => setVerifiedPrescription(event.target.value)}
+              >
+                <option value="">
+                  {recordType === "Prescription"
+                    ? "Select a pharmacy-verified prescription"
+                    : "Select a verified prescription (used for prescription records)"}
+                </option>
+                {verifiedPrescriptions.map((prescription) => (
+                  <option key={prescription.rxNumber} value={prescription.rxNumber}>
+                    {prescription.rxNumber}
+                  </option>
+                ))}
+              </Select>
+              <p className="mt-2 text-[10px] text-indigo-700/60 font-medium">
+                Only prescriptions verified by pharmacy appear here.
+              </p>
             </div>
 
             <div className="mt-2">
