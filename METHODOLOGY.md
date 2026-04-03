@@ -10,6 +10,8 @@ The project was developed around three main ideas:
 2. **Medical records and app data in PostgreSQL**
 3. **Role-specific dashboards in Next.js**
 
+For the blockchain-specific design, see [FABRIC_CHAINCODE_METHODOLOGY.md](/home/turing/Desktop/hyperledgerassignment/FABRIC_CHAINCODE_METHODOLOGY.md).
+
 ## Development Approach
 
 The work followed a layered implementation strategy:
@@ -124,4 +126,3 @@ The final result is a multi-role healthcare platform with:
 - searchable regulator oversight
 - pharmacy verification history
 - prescription-aware doctor workflows
-
