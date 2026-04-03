@@ -202,7 +202,7 @@ export default function DoctorPage() {
 
   return (
     <>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 text-slate-900">
+      <div className="max-w-6xl mx-auto px-3 sm:px-6 py-4 text-slate-900">
         <div className="mb-8 font-medium">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse shadow-[0_0_8px_rgba(79,70,229,0.25)]"></span>

@@ -103,7 +103,7 @@ export default function PatientRecordsPage({ params }: { params: Promise<{ patie
 
     return (
         <>
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
+            <div className="max-w-5xl mx-auto px-3 sm:px-6 py-4">
                 <div className="mb-8">
                     <button
                         onClick={() => router.back()}
@@ -119,37 +119,37 @@ export default function PatientRecordsPage({ params }: { params: Promise<{ patie
                     <h1 className="text-xl sm:text-2xl font-black text-indigo-950 tracking-tight leading-none uppercase">{patientId}</h1>
                 </div>
 
-                <div className="grid gap-6">
+                <div className="grid gap-5 sm:gap-6">
                     {records.length === 0 ? (
-                        <div className="border border-dashed border-indigo-200 rounded-3xl p-20 text-center bg-white/50">
+                        <div className="border border-dashed border-indigo-200 rounded-3xl p-12 sm:p-20 text-center bg-white/50">
                             <p className="text-indigo-700/30 text-[11px] font-bold uppercase tracking-widest">No records found on the ledger</p>
                         </div>
                     ) : (
                         records.sort((a, b) => b.created_at - a.created_at).map((rec) => (
                             <div
                                 key={rec.id}
-                                className="bg-white border border-indigo-100 overflow-hidden rounded-[2.5rem] hover:shadow-2xl hover:shadow-indigo-100 transition-all group"
+                                className="bg-white border border-indigo-100 overflow-hidden rounded-[2rem] sm:rounded-[2.5rem] hover:shadow-2xl hover:shadow-indigo-100 transition-all group"
                             >
-                                <div className="p-6 border-b border-indigo-100 bg-indigo-50/30 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
+                                <div className="p-4 sm:p-6 border-b border-indigo-100 bg-indigo-50/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                    <div className="flex items-center gap-3 sm:gap-4 min-w-0 w-full sm:w-auto">
                                         <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-xl shadow-sm group-hover:scale-110 transition-transform border border-indigo-100">
                                             {rec.record_type.toLowerCase().includes('report') ? '📋' : '📄'}
                                         </div>
-                                        <div>
+                                        <div className="min-w-0 flex-1">
                                             <h4 className="font-black text-indigo-950 text-sm leading-none uppercase tracking-tight">{rec.record_type}</h4>
-                                            <div className="flex items-center gap-2 mt-2">
+                                            <div className="flex items-center gap-2 mt-2 min-w-0">
                                                 <span className="w-1 h-1 bg-indigo-600 rounded-full animate-pulse"></span>
-                                                <p className="text-[10px] font-bold text-indigo-700/60 uppercase tracking-widest">
+                                                <p className="text-[10px] font-bold text-indigo-700/60 uppercase tracking-widest truncate">
                                                     {new Date(rec.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                 </p>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="px-3 py-1.5 bg-indigo-700 text-white text-[8px] font-black uppercase tracking-widest rounded-full">
+                                    <div className="w-full sm:w-auto px-3 py-1.5 bg-indigo-700 text-white text-[8px] font-black uppercase tracking-widest rounded-full text-center sm:text-left self-stretch sm:self-auto">
                                         Ledger Verified
                                     </div>
                                 </div>
-                                <div className="p-6 bg-white">
+                                <div className="p-4 sm:p-6 bg-white">
                                     <RenderPayload data={formatPayload(rec.payload)} />
                                 </div>
                             </div>

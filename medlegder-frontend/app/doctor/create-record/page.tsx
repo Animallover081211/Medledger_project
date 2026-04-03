@@ -236,7 +236,7 @@ export default function CreateRecordPage() {
 
   return (
     <>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
+      <div className="w-full max-w-none mx-auto px-2 sm:px-6 py-4">
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full shadow-[0_0_8px_rgba(79,70,229,0.25)]"></span>
@@ -246,8 +246,8 @@ export default function CreateRecordPage() {
           <p className="mt-1 text-xs text-indigo-700/70 font-black italic">Create immutable medical history for authorized patients.</p>
         </div>
 
-        <Card title="Record Composition">
-          <div className="grid gap-4 pt-2">
+        <Card title="Record Composition" className="p-4 sm:p-6">
+          <div className="grid gap-5 sm:gap-6 pt-2">
             <div>
               <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-indigo-900/80">Record Classification</label>
               <Select
@@ -294,7 +294,7 @@ export default function CreateRecordPage() {
             </div>
 
             {recordType === "Prescription" && (
-              <div className="rounded-[2rem] border border-indigo-100 bg-indigo-50/40 p-4 space-y-4">
+              <div className="rounded-[2rem] border border-indigo-100 bg-indigo-50/40 p-4 sm:p-5 space-y-4">
                 <div className="flex items-center justify-between gap-2">
                   <div>
                     <label className="block text-[9px] font-black uppercase tracking-widest text-indigo-900/80">Prescription Details</label>
@@ -363,9 +363,9 @@ export default function CreateRecordPage() {
             {recordType !== "Prescription" && (
               <div className="mt-2">
               <label className="mb-3 block text-[9px] font-black uppercase tracking-widest text-indigo-900/80">Record Payload (Integrated Protocol)</label>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {keyValues.map((kv, index) => (
-                  <div key={index} className="grid grid-cols-1 sm:grid-cols-[1.5fr_1.5fr_2fr_auto] gap-2 items-end p-4 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 transition-all hover:bg-white group/row">
+                  <div key={index} className="grid grid-cols-1 sm:grid-cols-[1.5fr_1.5fr_2fr_auto] gap-3 items-end p-4 sm:p-5 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 transition-all hover:bg-white group/row">
                     <div>
                       <label className="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-indigo-600/60">Template</label>
                       <Select

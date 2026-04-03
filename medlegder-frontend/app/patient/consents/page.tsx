@@ -9,6 +9,8 @@ import { getIdentity } from "../../../lib/identity";
 
 type ConsentEntry = {
   doctorId: string;
+  doctorName?: string;
+  specialty?: string | null;
   grantedAt: number;
   status: string;
 };
@@ -86,7 +88,7 @@ export default function ConsentsPage() {
 
   return (
     <>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
+      <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4">
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-1.5 h-1.5 bg-black rounded-full animate-pulse"></span>
@@ -105,18 +107,19 @@ export default function ConsentsPage() {
         ) : (
           <div className="grid gap-3">
             {consents.map((consent) => (
-              <div key={consent.doctorId} className="bg-white border border-black/[0.03] p-5 rounded-3xl flex items-center justify-between hover:shadow-xl hover:shadow-neutral-200/50 transition-all group">
+              <div key={consent.doctorId} className="bg-white border border-black/[0.03] p-4 sm:p-5 rounded-3xl flex flex-col sm:flex-row items-start sm:items-center justify-between hover:shadow-xl hover:shadow-neutral-200/50 transition-all group gap-4">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 bg-neutral-50 rounded-xl flex items-center justify-center text-lg shadow-inner group-hover:scale-110 transition-transform font-bold border border-black/[0.05]">
-                    {consent.doctorId.charAt(0).toUpperCase()}
+                    {(consent.doctorName || consent.doctorId).charAt(0).toUpperCase()}
                   </div>
                   <div>
-                    <h4 className="font-black text-black text-sm leading-none">{consent.doctorId}</h4>
+                    <h4 className="font-black text-black text-sm leading-none">{consent.doctorName || consent.doctorId}</h4>
                     <div className="flex items-center gap-3 mt-1.5">
                       <p className="text-[9px] font-bold text-black/50 uppercase tracking-widest">{new Date(consent.grantedAt).toLocaleDateString()}</p>
                       <span className="w-1 h-1 bg-black/20 rounded-full"></span>
                       <span className="text-[9px] font-black uppercase text-emerald-600 tracking-tighter">Active Protocol</span>
                     </div>
+                    <p className="mt-1 text-[9px] font-bold text-black/35 uppercase tracking-widest">ID: {consent.doctorId}</p>
                   </div>
                 </div>
                 <Button
@@ -124,7 +127,7 @@ export default function ConsentsPage() {
                   size="sm"
                   onClick={() => handleRevoke(consent.doctorId)}
                   disabled={revokeDoctorId === consent.doctorId}
-                  className="h-9 px-5 text-[9px] font-black uppercase tracking-widest border-black/5 hover:bg-black hover:text-white transition-all rounded-xl"
+                  className="h-9 w-full sm:w-auto px-5 text-[9px] font-black uppercase tracking-widest border-black/5 hover:bg-black hover:text-white transition-all rounded-xl"
                 >
                   {revokeDoctorId === consent.doctorId ? "Updating..." : "Revoke Access"}
                 </Button>

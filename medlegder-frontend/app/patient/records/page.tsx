@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { apiFetch } from "../../../lib/api_client";
 import { getIdentity } from "../../../lib/identity";
 import { Modal } from "../../components/ui/modal";
+import { Select } from "../../components/ui/select";
 
 type MedicalRecord = {
     id: string;
@@ -38,6 +39,7 @@ export default function MyRecordsPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
     const [records, setRecords] = useState<MedicalRecord[]>([]);
+    const [recordTypeFilter, setRecordTypeFilter] = useState("all");
 
     const [modal, setModal] = useState<{
         isOpen: boolean;
@@ -90,6 +92,11 @@ export default function MyRecordsPage() {
         }
     };
 
+    const recordTypes = Array.from(new Set(records.map((record) => record.record_type))).sort();
+    const visibleRecords = [...records]
+        .sort((a, b) => b.created_at - a.created_at)
+        .filter((record) => recordTypeFilter === "all" || record.record_type === recordTypeFilter);
+
     if (loading) {
         return (
             <div className="flex h-[60vh] items-center justify-center">
@@ -100,7 +107,7 @@ export default function MyRecordsPage() {
 
     return (
         <>
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
+            <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4">
                 <div className="mb-8">
                     <div className="flex items-center gap-2 mb-1">
                         <span className="w-1.5 h-1.5 bg-black rounded-full animate-pulse"></span>
@@ -110,37 +117,58 @@ export default function MyRecordsPage() {
                     <p className="mt-2 text-xs text-black/40 font-medium italic">Immutable transcript of your clinical records.</p>
                 </div>
 
+                <div className="mb-6 rounded-[2rem] border border-black/5 bg-white p-3 sm:p-4 shadow-sm">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                        <div className="flex-1">
+                            <label className="mb-1.5 block text-[9px] font-bold uppercase tracking-widest text-black/60">Filter By Record Type</label>
+                            <Select value={recordTypeFilter} onChange={(e) => setRecordTypeFilter(e.target.value)} className="h-10 text-xs">
+                                <option value="all">All Types</option>
+                                {recordTypes.map((type) => (
+                                    <option key={type} value={type}>{type}</option>
+                                ))}
+                            </Select>
+                        </div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-black/40">
+                            Showing {visibleRecords.length} of {records.length}
+                        </div>
+                    </div>
+                </div>
+
                 <div className="grid gap-6">
                     {records.length === 0 ? (
                         <div className="border border-dashed border-black/10 rounded-3xl p-20 text-center bg-white/50">
                             <p className="text-black/30 text-[11px] font-bold uppercase tracking-widest">No records found on the ledger</p>
                         </div>
+                    ) : visibleRecords.length === 0 ? (
+                        <div className="border border-dashed border-black/10 rounded-3xl p-20 text-center bg-white/50">
+                            <p className="text-black/30 text-[11px] font-bold uppercase tracking-widest">No records match this type</p>
+                        </div>
                     ) : (
-                        records.sort((a, b) => b.created_at - a.created_at).map((rec) => (
+                        visibleRecords.map((rec) => (
                             <div
                                 key={rec.id}
                                 className="bg-white border border-black/[0.03] overflow-hidden rounded-[2.5rem] hover:shadow-2xl hover:shadow-neutral-200/50 transition-all group"
                             >
-                                <div className="p-6 border-b border-black/[0.03] bg-neutral-50/30 flex items-center justify-between">
-                                    <div className="flex items-center gap-4">
+                                <div className="p-4 sm:p-6 border-b border-black/[0.03] bg-neutral-50/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                    <div className="flex items-center gap-4 w-full sm:w-auto min-w-0">
                                         <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-xl shadow-sm group-hover:scale-110 transition-transform border border-black/[0.03]">
                                             {rec.record_type.toLowerCase().includes('report') ? '📋' : '📄'}
                                         </div>
-                                        <div>
+                                        <div className="min-w-0 flex-1">
                                             <h4 className="font-black text-black text-sm leading-none uppercase tracking-tight">{rec.record_type}</h4>
-                                            <div className="flex items-center gap-2 mt-2">
+                                            <div className="flex items-center gap-2 mt-2 min-w-0">
                                                 <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></span>
-                                                <p className="text-[10px] font-bold text-black/60 uppercase tracking-widest">
+                                                <p className="text-[10px] font-bold text-black/60 uppercase tracking-widest truncate">
                                                     {new Date(rec.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                 </p>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="px-3 py-1.5 bg-black text-white text-[8px] font-black uppercase tracking-widest rounded-full">
+                                    <div className="w-full sm:w-auto px-3 py-1.5 bg-black text-white text-[8px] font-black uppercase tracking-widest rounded-full text-center sm:text-left self-stretch sm:self-auto">
                                         Ledger Verified
                                     </div>
                                 </div>
-                                <div className="p-6 bg-white">
+                                <div className="p-4 sm:p-6 bg-white">
                                     <RenderPayload data={formatPayload(rec.payload)} />
                                 </div>
                             </div>

@@ -10,7 +10,7 @@ import { getIdentity } from "../../../lib/identity";
 export default function DoctorPatientsPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
-    const [patients, setPatients] = useState<string[]>([]);
+    const [patients, setPatients] = useState<Array<{ id: string; name: string }>>([]);
 
     const [modal, setModal] = useState<{
         isOpen: boolean;
@@ -28,10 +28,20 @@ export default function DoctorPatientsPage() {
         setModal((prev) => ({ ...prev, isOpen: false }));
     };
 
+    const normalizePatients = (items: Array<string | { id: string; name: string }> | undefined) =>
+        (Array.isArray(items) ? items : [])
+            .map((item) => {
+                if (typeof item === "string") {
+                    return { id: item, name: item };
+                }
+                return item && item.id ? item : null;
+            })
+            .filter((item): item is { id: string; name: string } => Boolean(item?.id));
+
     const fetchPatients = useCallback(async (role: "doctor" | "hospital") => {
         try {
             const result = await apiFetch(role === "hospital" ? "/api/hospital/patients" : "/api/doctor/patients");
-            setPatients(result.patients || []);
+            setPatients(normalizePatients(result.patients));
         } catch {
             setPatients([]);
         } finally {
@@ -62,7 +72,7 @@ export default function DoctorPatientsPage() {
 
     return (
         <>
-            <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4">
+            <div className="max-w-6xl mx-auto px-3 sm:px-6 py-4">
                 <div className="mb-10">
                     <div className="flex items-center gap-2 mb-2">
                         <span className="w-2 h-2 bg-indigo-600 rounded-full shadow-[0_0_8px_rgba(79,70,229,0.25)]"></span>
@@ -82,29 +92,26 @@ export default function DoctorPatientsPage() {
                             <p className="text-indigo-700/50 text-xs font-medium max-w-xs mx-auto">Patients must grant consent before they appear in your registry.</p>
                         </div>
                     ) : (
-                        patients.map((pid) => (
+                        patients.map((patient) => (
                             <div
-                                key={pid}
-                                className="group relative bg-white border border-indigo-100 p-6 rounded-[2.5rem] text-left transition-all hover:shadow-2xl hover:shadow-indigo-100 hover:-translate-y-1"
+                                key={patient.id}
+                                className="group relative bg-white border border-indigo-100 p-5 sm:p-6 rounded-[2.5rem] text-left transition-all hover:shadow-2xl hover:shadow-indigo-100 hover:-translate-y-1"
                             >
-                                <div className="flex items-start justify-between mb-6">
-                                    <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-2xl shadow-inner group-hover:bg-indigo-700 group-hover:text-white transition-all transform group-hover:rotate-6">
-                                        {pid.charAt(0).toUpperCase()}
-                                    </div>
+                                <div className="flex items-center justify-end mb-4 sm:mb-6">
                                     <div className="flex gap-1">
                                         <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse"></span>
                                     </div>
                                 </div>
 
-                                <h3 className="text-xl font-black text-indigo-950 mb-1 truncate">{pid}</h3>
-                                <div className="flex flex-col gap-3 mt-6">
+                                <h3 className="text-xl font-black text-indigo-950 mb-1 truncate">{patient.name}</h3>
+                                <div className="flex flex-col gap-3 mt-5 sm:mt-6">
                                     <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-widest text-indigo-700/50 border-b border-indigo-100 pb-2">
                                         <span>Ledger ID</span>
-                                        <span className="text-indigo-950 font-mono tracking-normal text-[11px] font-bold">{pid}</span>
+                                        <span className="text-indigo-950 font-mono tracking-normal text-[11px] font-bold">{patient.id}</span>
                                     </div>
                                     <Button
                                         size="sm"
-                                        onClick={() => viewRecords(pid)}
+                                        onClick={() => viewRecords(patient.id)}
                                         className="w-full h-10 text-[10px] font-black uppercase tracking-widest bg-indigo-700 text-white hover:bg-indigo-800 transition-all rounded-2xl"
                                     >
                                         View Medical Records

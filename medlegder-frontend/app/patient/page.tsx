@@ -259,7 +259,7 @@ export default function PatientPage() {
 
   return (
     <>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 pb-16">
+      <div className="max-w-4xl mx-auto px-3 sm:px-6 py-4 pb-16">
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-1.5 h-1.5 bg-neutral-800 rounded-full animate-pulse"></span>
@@ -387,9 +387,9 @@ export default function PatientPage() {
         </div>
 
         <Card title="Audit History">
-          <div className="overflow-y-auto pt-2 min-h-[400px] max-h-[600px] scrollbar-hide">
+          <div className="overflow-y-auto pt-2 min-h-[360px] sm:min-h-[400px] max-h-[600px] scrollbar-hide">
             {!Array.isArray(audit) || audit.length === 0 ? (
-              <div className="flex items-center justify-center min-h-[400px]">
+              <div className="flex items-center justify-center min-h-[360px] sm:min-h-[400px]">
                 <p className="text-[11px] text-black/50 font-bold uppercase tracking-[0.2em]">Log is empty</p>
               </div>
             ) : (

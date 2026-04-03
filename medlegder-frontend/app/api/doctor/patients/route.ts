@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDoctorRequests } from "../../../../lib/server/services/access_request_service";
+import { getPatient } from "../../../../lib/server/services/identity_service";
 import { requireIdentity } from "../../_utils";
 
 export const runtime = "nodejs";
@@ -21,7 +22,18 @@ export const GET = async (request: NextRequest) => {
                 .map(r => r.patient_id)
         ));
 
-        return NextResponse.json({ patients: acceptedPatients });
+        const patients = await Promise.all(
+          acceptedPatients.map(async (patientId) => {
+            try {
+              const patient = await getPatient(patientId);
+              return { id: patientId, name: patient.name };
+            } catch {
+              return { id: patientId, name: patientId };
+            }
+          }),
+        );
+
+        return NextResponse.json({ patients });
     } catch (err) {
         const message = err instanceof Error ? err.message : "Failed to get patients";
         return NextResponse.json({ error: message }, { status: 500 });
