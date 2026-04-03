@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback, ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Card } from "../components/ui/card";
-import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
+import { Select } from "../components/ui/select";
 import { Modal } from "../components/ui/modal";
 import { apiFetch } from "../../lib/api_client";
 import { getIdentity } from "../../lib/identity";
@@ -20,17 +20,32 @@ type AuditLog = {
   txId: string;
 };
 
+type DoctorOption = {
+  id: string;
+  name: string;
+  role: "doctor" | "hospital";
+  specialty: string;
+};
+
+const IDENTITY_RETRY_DELAY_MS = 250;
+const IDENTITY_RETRY_ATTEMPTS = 5;
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 export default function PatientPage() {
   const router = useRouter();
   const [patientId, setPatientId] = useState<string | null>(null);
   const [patientName, setPatientName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [doctorId, setDoctorId] = useState("");
+  const [doctors, setDoctors] = useState<DoctorOption[]>([]);
+  const [refreshingDoctors, setRefreshingDoctors] = useState(false);
   const [audit, setAudit] = useState<AuditLog[]>([]);
   const [pendingRequests, setPendingRequests] = useState<AccessRequest[]>([]);
   const [grantingAccess, setGrantingAccess] = useState(false);
   const [revokingAccess, setRevokingAccess] = useState(false);
   const [respondingTo, setRespondingTo] = useState<string | null>(null);
+  const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
 
   const [modal, setModal] = useState<{
     isOpen: boolean;
@@ -52,14 +67,37 @@ export default function PatientPage() {
     setModal((prev) => ({ ...prev, isOpen: false }));
   };
 
-  const fetchPatientInfo = useCallback(async () => {
+  const copyIdentityId = async () => {
+    const value = patientId ?? "";
+    if (!value) return;
     try {
-      const result = await apiFetch(`/api/identity/patient`);
-      setPatientName(result.name);
+      await navigator.clipboard.writeText(value);
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 1500);
     } catch {
-      setPatientName(null);
-    } finally {
-      setLoading(false);
+      showModal("error", "Copy Failed", "Could not copy the ID to your clipboard");
+    }
+  };
+
+  const fetchPatientInfo = useCallback(async () => {
+    for (let attempt = 0; attempt < IDENTITY_RETRY_ATTEMPTS; attempt += 1) {
+      try {
+        const result = await apiFetch(`/api/identity/patient`);
+        setPatientName(result.name);
+        setLoading(false);
+        return;
+      } catch (err) {
+        const status = (err as { status?: number }).status;
+        const transientLookupFailure =
+          status === 404 ||
+          (err instanceof Error && /not registered|not found/i.test(err.message));
+        if (!transientLookupFailure || attempt === IDENTITY_RETRY_ATTEMPTS - 1) {
+          setPatientName(null);
+          setLoading(false);
+          return;
+        }
+        await sleep(IDENTITY_RETRY_DELAY_MS * (attempt + 1));
+      }
     }
   }, []);
 
@@ -71,6 +109,26 @@ export default function PatientPage() {
       setPendingRequests([]);
     }
   }, []);
+
+  const fetchDoctors = useCallback(async () => {
+    try {
+      const result = await apiFetch("/api/registry/doctors");
+      const list = Array.isArray(result.doctors) ? result.doctors : [];
+      setDoctors(list);
+      setDoctorId((current) => current || list[0]?.id || "");
+    } catch {
+      setDoctors([]);
+    }
+  }, []);
+
+  const refreshDoctors = async () => {
+    setRefreshingDoctors(true);
+    try {
+      await fetchDoctors();
+    } finally {
+      setRefreshingDoctors(false);
+    }
+  };
 
   const handleAudit = useCallback(async () => {
     const identity = getIdentity();
@@ -99,6 +157,7 @@ export default function PatientPage() {
     if (identity?.id) {
       fetchPatientInfo();
       fetchPendingRequests();
+      fetchDoctors();
       apiFetch(`/api/audit/${identity.id}`)
         .then(result => {
           const data = result.audit || (Array.isArray(result) ? result : []);
@@ -108,7 +167,7 @@ export default function PatientPage() {
     } else {
       queueMicrotask(() => setLoading(false));
     }
-  }, [router, fetchPatientInfo, fetchPendingRequests]);
+  }, [router, fetchPatientInfo, fetchPendingRequests, fetchDoctors]);
 
 
   const handleGrant = async () => {
@@ -207,7 +266,12 @@ export default function PatientPage() {
             <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-neutral-600">Patient Dashboard</p>
           </div>
           <h1 className="text-xl sm:text-2xl font-black text-black tracking-tight leading-none">Welcome, {patientName}</h1>
-          <p className="mt-1 text-sm text-black/60 font-mono">Ledger ID: {patientId}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-black/60 font-mono">
+            <span>Ledger ID: {patientId}</span>
+            <Button type="button" variant="secondary" size="sm" className="h-8 px-3 text-[10px]" onClick={copyIdentityId}>
+              {copyState === "copied" ? "Copied" : "Copy ID"}
+            </Button>
+          </div>
         </div>
 
         {pending.length > 0 && (
@@ -255,13 +319,29 @@ export default function PatientPage() {
           <Card title="Manage Consents">
             <div className="grid gap-4 pt-2">
               <div>
-                <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-black/80">Doctor Identity</label>
-                <Input
-                  placeholder="e.g. doctor-521"
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <label className="block text-[9px] font-black uppercase tracking-widest text-black/80">Doctor Identity</label>
+                  <button
+                    type="button"
+                    onClick={refreshDoctors}
+                    disabled={refreshingDoctors}
+                    className="text-[9px] font-black uppercase tracking-widest text-black/40 hover:text-black transition-all flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <span className={refreshingDoctors ? "animate-spin" : ""}>↻</span> Refresh
+                  </button>
+                </div>
+                <Select
                   value={doctorId}
-                  className="h-10 text-xs bg-neutral-50 border-none focus:ring-black placeholder:text-black/30"
                   onChange={(event) => setDoctorId(event.target.value)}
-                />
+                  className="h-10 text-xs bg-neutral-50 border-none focus:ring-black"
+                >
+                  <option value="">Select a doctor</option>
+                  {doctors.map((doctor) => (
+                    <option key={doctor.id} value={doctor.id}>
+                      {doctor.name}
+                    </option>
+                  ))}
+                </Select>
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <Button

@@ -5,9 +5,16 @@ import { useRouter } from "next/navigation";
 import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
+import { Select } from "../components/ui/select";
 import { Modal } from "../components/ui/modal";
 import { apiFetch } from "../../lib/api_client";
 import { getIdentity } from "../../lib/identity";
+
+const IDENTITY_RETRY_DELAY_MS = 250;
+const IDENTITY_RETRY_ATTEMPTS = 5;
+type ProviderRole = "doctor" | "hospital";
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export default function DoctorPage() {
   const router = useRouter();
@@ -16,10 +23,13 @@ export default function DoctorPage() {
   const [doctorSpecialty, setDoctorSpecialty] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [patientId, setPatientId] = useState("");
+  const [patients, setPatients] = useState<Array<{ id: string; name: string }>>([]);
   const [reason, setReason] = useState("");
   const [requestingAccess, setRequestingAccess] = useState(false);
   const [loggingEmergency, setLoggingEmergency] = useState(false);
+  const [refreshingPatients, setRefreshingPatients] = useState(false);
   const [grantedPatients, setGrantedPatients] = useState<string[]>([]);
+  const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
 
   const [modal, setModal] = useState<{
     isOpen: boolean;
@@ -41,38 +51,83 @@ export default function DoctorPage() {
     setModal((prev) => ({ ...prev, isOpen: false }));
   };
 
-  const fetchDoctorInfo = useCallback(async () => {
+  const copyIdentityId = async () => {
+    const value = doctorId ?? "";
+    if (!value) return;
     try {
-      const result = await apiFetch(`/api/identity/doctor`);
-      setDoctorName(result.name);
-      setDoctorSpecialty(result.specialty);
+      await navigator.clipboard.writeText(value);
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 1500);
     } catch {
-      setDoctorName(null);
-    } finally {
-      setLoading(false);
+      showModal("error", "Copy Failed", "Could not copy the ID to your clipboard");
+    }
+  };
+
+  const fetchDoctorInfo = useCallback(async (role: ProviderRole) => {
+    for (let attempt = 0; attempt < IDENTITY_RETRY_ATTEMPTS; attempt += 1) {
+      try {
+        const result = await apiFetch(`/api/identity/${role}`);
+        setDoctorName(result.name);
+        setDoctorSpecialty(result.specialty);
+        setLoading(false);
+        return;
+      } catch (err) {
+        const status = (err as { status?: number }).status;
+        const transientLookupFailure =
+          status === 404 ||
+          (err instanceof Error && /not registered|not found/i.test(err.message));
+        if (!transientLookupFailure || attempt === IDENTITY_RETRY_ATTEMPTS - 1) {
+          setDoctorName(null);
+          setLoading(false);
+          return;
+        }
+        await sleep(IDENTITY_RETRY_DELAY_MS * (attempt + 1));
+      }
     }
   }, []);
 
+  const fetchPatients = useCallback(async () => {
+    try {
+      const result = await apiFetch("/api/registry/patients");
+      const list = Array.isArray(result.patients) ? result.patients : [];
+      setPatients(list);
+      setPatientId((current) => current || list[0]?.id || "");
+    } catch {
+      setPatients([]);
+    }
+  }, []);
+
+  const refreshPatients = async () => {
+    setRefreshingPatients(true);
+    try {
+      await fetchPatients();
+    } finally {
+      setRefreshingPatients(false);
+    }
+  };
+
   useEffect(() => {
     const identity = getIdentity();
-    if (!identity || identity.role !== "doctor") {
+    if (!identity || (identity.role !== "doctor" && identity.role !== "hospital")) {
       router.push("/");
       return;
     }
+    const role = identity.role as ProviderRole;
     queueMicrotask(() => {
       setDoctorId(identity?.id ?? null);
     });
 
     if (identity?.id) {
-      fetchDoctorInfo();
+      fetchDoctorInfo(role);
+      fetchPatients();
       // Fetch granted patients inline to avoid dependency loop
-      apiFetch("/api/doctor/patients")
+      apiFetch(role === "hospital" ? "/api/hospital/patients" : "/api/doctor/patients")
         .then(result => setGrantedPatients(result.patients || []))
         .catch(() => { });
     } else {
       queueMicrotask(() => setLoading(false));
     }
-  }, [router, fetchDoctorInfo]);
+  }, [router, fetchDoctorInfo, fetchPatients]);
 
   const handleRequestAccess = async () => {
     if (!patientId.trim()) {
@@ -128,7 +183,7 @@ export default function DoctorPage() {
   if (loading) {
     return (
       <div className="flex h-[40vh] items-center justify-center">
-        <div className="w-8 h-8 border-3 border-black border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -137,7 +192,7 @@ export default function DoctorPage() {
     return (
       <div className="min-h-screen bg-neutral-50 px-4 py-8">
         <Card title="Not Registered">
-          <p className="text-xs text-black/90 text-center py-4 font-medium">
+          <p className="text-xs text-indigo-950/90 text-center py-4 font-medium">
             Identification missing from ledger registry.
           </p>
         </Card>
@@ -150,24 +205,45 @@ export default function DoctorPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 text-slate-900">
         <div className="mb-8 font-medium">
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-1.5 h-1.5 bg-black rounded-full animate-pulse shadow-[0_0_8px_rgba(0,0,0,0.1)]"></span>
-            <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-black/60">Provider Portal</p>
+            <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse shadow-[0_0_8px_rgba(79,70,229,0.25)]"></span>
+            <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-indigo-700">Provider Portal</p>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-black tracking-tight leading-none">Dr. {doctorName}</h1>
-          <p className="mt-1 text-sm text-black/60 font-medium">{doctorSpecialty} • ID: {doctorId}</p>
+          <h1 className="text-xl sm:text-2xl font-black text-indigo-950 tracking-tight leading-none">Dr. {doctorName}</h1>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-indigo-700 font-medium">
+            <span>{doctorSpecialty} • ID: {doctorId}</span>
+            <Button type="button" variant="secondary" size="sm" className="h-8 px-3 text-[10px] border border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100" onClick={copyIdentityId}>
+              {copyState === "copied" ? "Copied" : "Copy ID"}
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 mb-8">
           <Card title="Registry Request">
             <div className="grid gap-4 pt-2">
               <div>
-                <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-black/80">Target Patient ID</label>
-                <Input
-                  placeholder="e.g. patient-201"
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <label className="block text-[9px] font-black uppercase tracking-widest text-indigo-900/80">Target Patient</label>
+                  <button
+                    type="button"
+                    onClick={refreshPatients}
+                    disabled={refreshingPatients}
+                    className="text-[9px] font-black uppercase tracking-widest text-indigo-600/60 hover:text-indigo-700 transition-all flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <span className={refreshingPatients ? "animate-spin" : ""}>↻</span> Refresh
+                  </button>
+                </div>
+                <Select
                   value={patientId}
-                  className="h-10 text-xs bg-neutral-50/50 border-none focus:ring-black placeholder:text-black/30"
                   onChange={(event) => setPatientId(event.target.value)}
-                />
+                  className="h-10 text-xs bg-indigo-50 border-none focus:ring-indigo-500"
+                >
+                  <option value="">Select a patient</option>
+                  {patients.map((patient) => (
+                    <option key={patient.id} value={patient.id}>
+                      {patient.name}
+                    </option>
+                  ))}
+                </Select>
               </div>
               <Button
                 size="sm"
@@ -183,27 +259,43 @@ export default function DoctorPage() {
                   </>
                 ) : "Send Access Request"}
               </Button>
-              <p className="text-[9px] text-black/60 font-medium italic text-center">Sends an authorization hook to the patient.</p>
+              <p className="text-[9px] text-indigo-700/60 font-medium italic text-center">Sends an authorization hook to the patient.</p>
             </div>
           </Card>
 
           <Card title="Override Access">
             <div className="grid gap-4 pt-2">
               <div>
-                <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-black/80">Patient ID</label>
-                <Input
-                  placeholder="e.g. patient-201"
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <label className="block text-[9px] font-black uppercase tracking-widest text-indigo-900/80">Patient</label>
+                  <button
+                    type="button"
+                    onClick={refreshPatients}
+                    disabled={refreshingPatients}
+                    className="text-[9px] font-black uppercase tracking-widest text-indigo-600/60 hover:text-indigo-700 transition-all flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <span className={refreshingPatients ? "animate-spin" : ""}>↻</span> Refresh
+                  </button>
+                </div>
+                <Select
                   value={patientId}
-                  className="h-10 text-xs bg-neutral-50/50 border-none focus:ring-black placeholder:text-black/30"
                   onChange={(event) => setPatientId(event.target.value)}
-                />
+                  className="h-10 text-xs bg-indigo-50 border-none focus:ring-indigo-500"
+                >
+                  <option value="">Select a patient</option>
+                  {patients.map((patient) => (
+                    <option key={patient.id} value={patient.id}>
+                      {patient.name}
+                    </option>
+                  ))}
+                </Select>
               </div>
               <div>
-                <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-black/80">Justification</label>
+                <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-indigo-900/80">Justification</label>
                 <Input
                   placeholder="Reason for emergency..."
                   value={reason}
-                  className="h-10 text-xs bg-neutral-50/50 border-none focus:ring-black placeholder:text-black/30"
+                  className="h-10 text-xs bg-indigo-50/50 border-none focus:ring-indigo-500 placeholder:text-indigo-300"
                   onChange={(event) => setReason(event.target.value)}
                 />
               </div>
@@ -211,12 +303,12 @@ export default function DoctorPage() {
                 size="sm"
                 variant="none"
                 onClick={handleEmergency}
-                className="h-9 text-[10px] bg-white text-black border border-black/15 font-bold tracking-widest uppercase flex items-center justify-center gap-2 rounded-full"
+                className="h-9 text-[10px] bg-white text-indigo-950 border border-indigo-200 font-bold tracking-widest uppercase flex items-center justify-center gap-2 rounded-full"
                 disabled={loggingEmergency}
               >
                 {loggingEmergency ? (
                   <>
-                    <div className="w-3 h-3 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                    <div className="w-3 h-3 border-2 border-indigo-200 border-t-indigo-700 rounded-full animate-spin" />
                     Logging...
                   </>
                 ) : <span>Log Emergency Access</span>}
@@ -232,11 +324,11 @@ export default function DoctorPage() {
                 Patients who have directly granted you access to their records.
               </p>
               {grantedPatients.map((pid) => (
-                <div key={pid} className="flex items-center gap-3 p-3 bg-neutral-50/70 rounded-2xl border border-black/[0.04]">
-                  <div className="w-8 h-8 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-center text-base">🧑‍⚕️</div>
+                <div key={pid} className="flex items-center gap-3 p-3 bg-indigo-50/70 rounded-2xl border border-indigo-100">
+                  <div className="w-8 h-8 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-center text-base">🧑‍⚕️</div>
                   <div>
-                    <p className="text-xs font-bold text-black leading-none">{pid}</p>
-                    <p className="text-[9px] text-emerald-600 mt-1 font-black uppercase tracking-wider">✓ Access Granted</p>
+                    <p className="text-xs font-bold text-indigo-950 leading-none">{pid}</p>
+                    <p className="text-[9px] text-indigo-600 mt-1 font-black uppercase tracking-wider">✓ Access Granted</p>
                   </div>
                 </div>
               ))}

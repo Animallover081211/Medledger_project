@@ -16,7 +16,9 @@ export const apiFetch = async (path: string, init?: RequestInit) => {
 
   const text = await res.text();
   if (!res.ok) {
-    throw new Error(text || `Request failed with ${res.status}`);
+    const error = new Error(text || `Request failed with ${res.status}`);
+    (error as Error & { status?: number }).status = res.status;
+    throw error;
   }
 
   try {

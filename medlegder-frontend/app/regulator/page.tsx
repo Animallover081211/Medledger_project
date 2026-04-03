@@ -35,6 +35,15 @@ const regulatorNavItems: NavItem[] = [
     ),
   },
   {
+    href: "/regulator/users",
+    label: "Users",
+    icon: (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+      </svg>
+    ),
+  },
+  {
     href: "/regulator/audit",
     label: "Audit Logs",
     icon: (
@@ -104,7 +113,7 @@ export default function RegulatorPage() {
         navItems={regulatorNavItems}
         accentColor="orange"
       />
-      <div className="lg:ml-56 min-h-screen bg-neutral-50 p-6">
+      <div className="lg:ml-56 min-h-screen bg-neutral-50 p-6 pt-24 lg:pt-6">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 text-slate-900">
           <div className="mb-8 font-medium">
             <div className="flex items-center gap-2 mb-1">
@@ -145,6 +154,13 @@ export default function RegulatorPage() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 mb-8">
+            <Link href="/regulator/users" className="flex items-center justify-between gap-3 p-4 bg-orange-50 rounded-2xl border border-orange-100 hover:bg-orange-100 transition-colors">
+              <div>
+                <p className="text-xs font-bold text-black">User Directory</p>
+                <p className="text-[9px] text-black/60">Browse all registered identities</p>
+              </div>
+              <span className="text-orange-700 text-lg">→</span>
+            </Link>
             <Link href="/regulator/audit" className="flex items-center justify-between gap-3 p-4 bg-orange-50 rounded-2xl border border-orange-100 hover:bg-orange-100 transition-colors">
               <div>
                 <p className="text-xs font-bold text-black">Open Audit Logs</p>

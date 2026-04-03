@@ -4,11 +4,16 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { OrgSidebar, type NavItem } from "../../components/layout/org_sidebar";
 import { Card } from "../../components/ui/card";
-import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
+import { Select } from "../../components/ui/select";
 import { Modal } from "../../components/ui/modal";
 import { apiFetch } from "../../../lib/api_client";
 import { getIdentity } from "../../../lib/identity";
+
+type PatientOption = {
+  id: string;
+  name: string;
+};
 
 type AuditRecord = {
   id: string;
@@ -23,6 +28,7 @@ type AuditRecord = {
 
 const regulatorNavItems: NavItem[] = [
   { href: "/regulator", label: "Dashboard", icon: <span>▣</span> },
+  { href: "/regulator/users", label: "Users", icon: <span>👥</span> },
   { href: "/regulator/audit", label: "Audit Logs", icon: <span>🧾</span> },
   { href: "/regulator/compliance", label: "Compliance", icon: <span>🛡</span> },
 ];
@@ -31,7 +37,9 @@ export default function RegulatorAuditPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [patientId, setPatientId] = useState("");
+  const [patients, setPatients] = useState<PatientOption[]>([]);
   const [loadingAudit, setLoadingAudit] = useState(false);
+  const [refreshingPatients, setRefreshingPatients] = useState(false);
   const [auditData, setAuditData] = useState<AuditRecord[]>([]);
   const [modal, setModal] = useState<{
     isOpen: boolean;
@@ -46,8 +54,37 @@ export default function RegulatorAuditPage() {
       router.push("/");
       return;
     }
-    setLoading(false);
+    const loadPatients = async () => {
+      setRefreshingPatients(true);
+      try {
+        const result = await apiFetch("/api/registry/patients");
+        const list = Array.isArray(result?.patients) ? result.patients : [];
+        setPatients(list);
+        setPatientId((current) => current || list[0]?.id || "");
+      } catch {
+        setPatients([]);
+      } finally {
+        setRefreshingPatients(false);
+        setLoading(false);
+      }
+    };
+
+    loadPatients();
   }, [router]);
+
+  const refreshPatients = async () => {
+    setRefreshingPatients(true);
+    try {
+      const result = await apiFetch("/api/registry/patients");
+      const list = Array.isArray(result?.patients) ? result.patients : [];
+      setPatients(list);
+      setPatientId((current) => current || list[0]?.id || "");
+    } catch {
+      setPatients([]);
+    } finally {
+      setRefreshingPatients(false);
+    }
+  };
 
   const handleViewAudit = async () => {
     if (!patientId.trim()) {
@@ -82,7 +119,7 @@ export default function RegulatorAuditPage() {
   return (
     <>
       <OrgSidebar orgName="Regulator" portalLabel="Regulator Portal" navItems={regulatorNavItems} accentColor="orange" />
-      <div className="lg:ml-56 min-h-screen bg-neutral-50 p-6">
+      <div className="lg:ml-56 min-h-screen bg-neutral-50 p-6 pt-24 lg:pt-6">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 text-slate-900">
           <div className="mb-8">
             <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-orange-600 mb-1">Regulator Portal</p>
@@ -93,14 +130,29 @@ export default function RegulatorAuditPage() {
           <Card title="Find Audit Trail">
             <div className="grid gap-4 pt-2">
               <div>
-                <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-black/80">Patient ID</label>
-                <Input
-                  placeholder="e.g. patient-001"
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <label className="block text-[9px] font-black uppercase tracking-widest text-black/80">Patient</label>
+                  <button
+                    type="button"
+                    onClick={refreshPatients}
+                    disabled={refreshingPatients}
+                    className="text-[9px] font-black uppercase tracking-widest text-orange-600/60 hover:text-orange-600 transition-all flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <span className={refreshingPatients ? "animate-spin" : ""}>↻</span> Refresh
+                  </button>
+                </div>
+                <Select
                   value={patientId}
-                  className="h-10 text-xs bg-neutral-50/50 border-none focus:ring-orange-600 placeholder:text-black/30"
                   onChange={(event) => setPatientId(event.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleViewAudit()}
-                />
+                  className="h-10 text-xs bg-neutral-50/50 border-none focus:ring-orange-600"
+                >
+                  <option value="">Select a patient</option>
+                  {patients.map((patient) => (
+                    <option key={patient.id} value={patient.id}>
+                      {patient.name}
+                    </option>
+                  ))}
+                </Select>
               </div>
               <Button
                 size="sm"

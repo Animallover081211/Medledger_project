@@ -15,7 +15,7 @@ const features = [
   {
     title: "Off-chain records",
     description:
-      "Clinical records are stored in Turso for speed, while access is strictly gated by chaincode.",
+      "Clinical records are stored in Postgres for speed, while access is strictly gated by chaincode.",
   },
   {
     title: "Role-aware access",
@@ -74,7 +74,7 @@ export default function Home() {
                 <p className="text-xs uppercase tracking-[0.3em] text-black/50">ID-based Auth</p>
                 <p className="mt-3 text-lg font-semibold text-black">Simple & secure.</p>
                 <p className="mt-2 text-sm text-black/60">
-                  No passwords. Just your identity controls access.
+                  Auto-generated IDs plus passwords keep login simple without exposing ledger credentials.
                 </p>
               </div>
             </div>

@@ -53,8 +53,8 @@ const pharmacyNavItems: NavItem[] = [
     ),
   },
   {
-    href: "/pharmacy/dispensed",
-    label: "Dispensed",
+    href: "/pharmacy/history",
+    label: "History",
     icon: (
       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
@@ -158,7 +158,7 @@ export default function PharmacyPage() {
         navItems={pharmacyNavItems}
         accentColor="purple"
       />
-      <div className="lg:ml-56 min-h-screen bg-neutral-50 p-6">
+      <div className="lg:ml-56 min-h-screen bg-neutral-50 p-6 pt-24 lg:pt-6">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 text-slate-900">
           <div className="mb-8 font-medium">
             <div className="flex items-center gap-2 mb-1">
@@ -227,11 +227,11 @@ export default function PharmacyPage() {
                     <p className="text-[9px] text-black/60">Process and record dispensing</p>
                   </div>
                 </Link>
-                <Link href="/pharmacy/dispensed" className="flex items-center gap-3 p-4 bg-neutral-50 rounded-2xl border border-black/5 hover:bg-neutral-100 transition-colors">
+                <Link href="/pharmacy/history" className="flex items-center gap-3 p-4 bg-neutral-50 rounded-2xl border border-black/5 hover:bg-neutral-100 transition-colors">
                   <div className="w-10 h-10 bg-neutral-200 rounded-xl flex items-center justify-center text-lg">📋</div>
                   <div className="text-left">
                     <p className="text-xs font-bold text-black">View History</p>
-                    <p className="text-[9px] text-black/60">See previously dispensed prescriptions</p>
+                    <p className="text-[9px] text-black/60">See verified and dispensed prescriptions</p>
                   </div>
                 </Link>
               </div>

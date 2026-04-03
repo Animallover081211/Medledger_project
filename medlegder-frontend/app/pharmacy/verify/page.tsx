@@ -13,7 +13,7 @@ import { getIdentity } from "../../../lib/identity";
 const pharmacyNavItems: NavItem[] = [
   { href: "/pharmacy", label: "Dashboard", icon: <span>▣</span> },
   { href: "/pharmacy/verify", label: "Verify Rx", icon: <span>✓</span> },
-  { href: "/pharmacy/dispensed", label: "Dispensed", icon: <span>📋</span> },
+  { href: "/pharmacy/history", label: "History", icon: <span>📋</span> },
 ];
 
 export default function PharmacyVerifyPage() {
@@ -115,7 +115,7 @@ export default function PharmacyVerifyPage() {
   return (
     <>
       <OrgSidebar orgName="Pharmacy" portalLabel="Pharmacy Portal" navItems={pharmacyNavItems} accentColor="purple" />
-      <div className="lg:ml-56 min-h-screen bg-neutral-50 p-6">
+      <div className="lg:ml-56 min-h-screen bg-neutral-50 p-6 pt-24 lg:pt-6">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 text-slate-900">
           <div className="mb-8">
             <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-purple-600 mb-1">Pharmacy Portal</p>

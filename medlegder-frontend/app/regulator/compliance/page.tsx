@@ -25,6 +25,7 @@ type ComplianceReport = {
 
 const regulatorNavItems: NavItem[] = [
   { href: "/regulator", label: "Dashboard", icon: <span>▣</span> },
+  { href: "/regulator/users", label: "Users", icon: <span>👥</span> },
   { href: "/regulator/audit", label: "Audit Logs", icon: <span>🧾</span> },
   { href: "/regulator/compliance", label: "Compliance", icon: <span>🛡</span> },
 ];
@@ -66,7 +67,7 @@ export default function RegulatorCompliancePage() {
   return (
     <>
       <OrgSidebar orgName="Regulator" portalLabel="Regulator Portal" navItems={regulatorNavItems} accentColor="orange" />
-      <div className="lg:ml-56 min-h-screen bg-neutral-50 p-6">
+      <div className="lg:ml-56 min-h-screen bg-neutral-50 p-6 pt-24 lg:pt-6">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 text-slate-900">
           <div className="mb-8">
             <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-orange-600 mb-1">Regulator Portal</p>

@@ -93,6 +93,14 @@ export const listDispensedPrescriptions = async (): Promise<PharmacyPrescription
   return result as PharmacyPrescription[];
 };
 
+export const listPharmacyHistory = async (): Promise<PharmacyPrescription[]> => {
+  const result = await db
+    .select()
+    .from(pharmacy_prescriptions)
+    .orderBy(desc(pharmacy_prescriptions.created_at));
+  return result as PharmacyPrescription[];
+};
+
 export const listVerifiedPrescriptions = async (): Promise<PharmacyPrescription[]> => {
   const result = await db
     .select()

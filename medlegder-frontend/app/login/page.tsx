@@ -11,6 +11,8 @@ import { setIdentity, setToken, type IdentityRole } from "../../lib/identity";
 export default function LoginPage() {
   const router = useRouter();
   const [userId, setUserId] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<IdentityRole>("patient");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,6 +35,7 @@ export default function LoginPage() {
         body: JSON.stringify({
           userId: userId.trim(),
           role,
+          password,
         }),
       });
 
@@ -50,7 +53,7 @@ export default function LoginPage() {
       const roleRoutes: Record<string, string> = {
         patient: "/patient",
         doctor: "/doctor",
-        hospital: "/hospital",
+        hospital: "/doctor",
         pharmacy: "/pharmacy",
         regulator: "/regulator",
       };
@@ -86,10 +89,28 @@ export default function LoginPage() {
               />
             </div>
             <div>
+              <label className="mb-1 block text-xs font-black text-black uppercase tracking-widest">Password</label>
+              <div className="flex gap-2">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Your password"
+                  value={password}
+                  className="placeholder:text-black/30"
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setError("");
+                  }}
+                  onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                />
+                <Button type="button" variant="secondary" onClick={() => setShowPassword((current) => !current)}>
+                  {showPassword ? "Hide" : "Show"}
+                </Button>
+              </div>
+            </div>
+            <div>
               <label className="mb-1 block text-xs font-black text-black uppercase tracking-widest">Role Identification</label>
               <Select value={role} onChange={(e) => setRole(e.target.value as IdentityRole)}>
                 <option value="patient">Patient</option>
-                <option value="doctor">GP Clinic Doctor</option>
                 <option value="hospital">Hospital Doctor</option>
                 <option value="pharmacy">Pharmacy</option>
                 <option value="regulator">Regulator</option>

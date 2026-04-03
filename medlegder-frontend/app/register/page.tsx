@@ -33,13 +33,18 @@ const SPECIALTIES = [
 export default function RegisterPage() {
   const router = useRouter();
   const [role, setRole] = useState<IdentityRole>("patient");
-  const [userId, setUserId] = useState("");
   const [name, setName] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [specialty, setSpecialty] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [modal, setModal] = useState<{ show: boolean; message: string; isError: boolean }>({
+  const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+  const [modal, setModal] = useState<{ show: boolean; title: string; message: string; isError: boolean; generatedId?: string; nextRoute?: string }>({
     show: false,
+    title: "",
     message: "",
     isError: false,
   });
@@ -48,9 +53,30 @@ export default function RegisterPage() {
     clearIdentity();
   }, []);
 
+  const copyGeneratedId = async () => {
+    if (!modal.generatedId) return;
+    try {
+      await navigator.clipboard.writeText(modal.generatedId);
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 1500);
+    } catch {
+      setStatus("Could not copy the generated ID");
+    }
+  };
+
   const handleRegister = async () => {
-    if (!userId.trim() || !name.trim()) {
+    if (!name.trim()) {
       setStatus("Please fill in all fields");
+      return;
+    }
+
+    if (!password.trim() || password.length < 8) {
+      setStatus("Password must be at least 8 characters");
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setStatus("Passwords do not match");
       return;
     }
 
@@ -69,12 +95,12 @@ export default function RegisterPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId: userId.trim(),
-          role,
-          name: name.trim(),
-          ...(role === "doctor" && specialty ? { specialty: specialty.trim() } : {}),
-        }),
-      });
+            role,
+            name: name.trim(),
+            password,
+            ...(role === "doctor" && specialty ? { specialty: specialty.trim() } : {}),
+          }),
+        });
 
       const data = await res.json();
 
@@ -82,7 +108,8 @@ export default function RegisterPage() {
         if (res.status === 409 || data.error?.includes("already exists")) {
           setModal({
             show: true,
-            message: `${role === "patient" ? "Patient" : "Doctor"} ID already exists. Please use a different ID.`,
+            title: "Registration Failed",
+            message: `Could not assign a unique ID automatically. Please try again.`,
             isError: true,
           });
           setLoading(false);
@@ -93,15 +120,23 @@ export default function RegisterPage() {
 
       setToken(data.token);
       setIdentity(data.user);
-      
+
       const roleRoutes: Record<string, string> = {
         patient: "/patient",
         doctor: "/doctor",
-        hospital: "/hospital",
+        hospital: "/doctor",
         pharmacy: "/pharmacy",
         regulator: "/regulator",
       };
-      router.push(roleRoutes[role] || "/");
+
+      setModal({
+        show: true,
+        title: "Registration Successful",
+        message: `Your new ID is ${data.user.id}. Save it now because you will use it with your password to log in.`,
+        isError: false,
+        generatedId: data.user.id,
+        nextRoute: roleRoutes[role] || "/",
+      });
 
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Registration failed");
@@ -118,7 +153,7 @@ export default function RegisterPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.4em] text-black/50">MedLedger</p>
           <h1 className="mt-3 text-3xl font-semibold text-black">Register & Continue</h1>
           <p className="mt-2 text-sm text-black/60">
-            Choose your role, enter your ID and name to register on the blockchain.
+            Choose your role, set a password, and we will generate your blockchain ID automatically.
           </p>
         </div>
 
@@ -128,27 +163,10 @@ export default function RegisterPage() {
               <label className="mb-1 block text-xs font-medium text-black/70">Role</label>
               <Select value={role} onChange={(e) => setRole(e.target.value as IdentityRole)}>
                 <option value="patient">Patient</option>
-                <option value="doctor">GP Clinic Doctor</option>
                 <option value="hospital">Hospital Doctor</option>
                 <option value="pharmacy">Pharmacy</option>
                 <option value="regulator">Regulator</option>
               </Select>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-medium text-black/70">Your ID</label>
-              <Input
-                placeholder={
-                  role === "patient" ? "e.g. patient-001" :
-                  role === "doctor" ? "e.g. gpdoctor-001" :
-                  role === "hospital" ? "e.g. hospitaldr-001" :
-                  role === "pharmacy" ? "e.g. pharmacy-001" :
-                  "e.g. regulator-001"
-                }
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-              />
-              <p className="mt-1 text-xs text-black/50">This ID will be used for all interactions</p>
             </div>
 
             <div>
@@ -158,6 +176,37 @@ export default function RegisterPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
               />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-black/70">Password</label>
+              <div className="flex gap-2">
+                <Input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Choose a password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <Button type="button" variant="secondary" onClick={() => setShowPassword((current) => !current)}>
+                  {showPassword ? "Hide" : "Show"}
+                </Button>
+              </div>
+              <p className="mt-1 text-xs text-black/50">Use at least 8 characters.</p>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-medium text-black/70">Confirm Password</label>
+              <div className="flex gap-2">
+                <Input
+                  type={showConfirmPassword ? "text" : "password"}
+                  placeholder="Re-enter your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                <Button type="button" variant="secondary" onClick={() => setShowConfirmPassword((current) => !current)}>
+                  {showConfirmPassword ? "Hide" : "Show"}
+                </Button>
+              </div>
             </div>
 
             {role === "doctor" && (
@@ -201,9 +250,31 @@ export default function RegisterPage() {
       {modal.show && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/50">
           <div className="rounded-xl bg-white p-6 shadow-xl">
-            <h3 className="text-lg font-semibold text-red-600">Registration Failed</h3>
+            <h3 className={`text-lg font-semibold ${modal.isError ? "text-red-600" : "text-emerald-600"}`}>
+              {modal.title}
+            </h3>
             <p className="mt-2 text-sm text-black/70">{modal.message}</p>
-            <Button className="mt-4" onClick={() => setModal({ show: false, message: "", isError: false })}>
+            {!modal.isError && modal.generatedId && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-mono text-emerald-700">
+                  {modal.generatedId}
+                </span>
+                <Button type="button" variant="secondary" size="sm" onClick={copyGeneratedId}>
+                  {copyState === "copied" ? "Copied" : "Copy ID"}
+                </Button>
+              </div>
+            )}
+            <Button
+              className="mt-4"
+              onClick={() => {
+                const nextRoute = modal.nextRoute;
+                setCopyState("idle");
+                setModal({ show: false, title: "", message: "", isError: false });
+                if (nextRoute) {
+                  router.push(nextRoute);
+                }
+              }}
+            >
               OK
             </Button>
           </div>

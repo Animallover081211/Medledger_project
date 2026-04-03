@@ -32,6 +32,7 @@ const RECORD_TYPES = [
   "Immunization",
   "Emergency Triage"
 ];
+type ProviderRole = "doctor" | "hospital";
 
 export default function CreateRecordPage() {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function CreateRecordPage() {
   const [patientId, setPatientId] = useState("");
   const [recordType, setRecordType] = useState("");
   const [saving, setSaving] = useState(false);
-  const [patients, setPatients] = useState<string[]>([]);
+  const [patients, setPatients] = useState<Array<{ id: string; name: string }>>([]);
   const [fetchingPatients, setFetchingPatients] = useState(false);
 
   type KeyValue = { key: string; value: string; template?: string };
@@ -66,11 +67,20 @@ export default function CreateRecordPage() {
     setModal((prev) => ({ ...prev, isOpen: false }));
   };
 
-  const fetchPatients = useCallback(async () => {
+  const fetchPatients = useCallback(async (role: ProviderRole) => {
     setFetchingPatients(true);
     try {
-      const result = await apiFetch("/api/doctor/patients");
-      setPatients(result.patients || []);
+      const [grantedResult, registryResult] = await Promise.all([
+        apiFetch(role === "hospital" ? "/api/hospital/patients" : "/api/doctor/patients"),
+        apiFetch("/api/registry/patients"),
+      ]);
+      const grantedIds = new Set((grantedResult.patients || []).map((pid: string) => String(pid)));
+      const registryPatients = Array.isArray(registryResult.patients) ? registryResult.patients : [];
+      setPatients(
+        registryPatients
+          .filter((patient: { id?: string }) => patient?.id && grantedIds.has(patient.id))
+          .map((patient: { id: string; name: string }) => ({ id: patient.id, name: patient.name }))
+      );
     } catch {
       setPatients([]);
     } finally {
@@ -80,11 +90,11 @@ export default function CreateRecordPage() {
 
   useEffect(() => {
     const identity = getIdentity();
-    if (!identity || identity.role !== "doctor") {
+    if (!identity || (identity.role !== "doctor" && identity.role !== "hospital")) {
       router.push("/");
       return;
     }
-    fetchPatients();
+    fetchPatients(identity.role as ProviderRole);
     queueMicrotask(() => setLoading(false));
   }, [router, fetchPatients]);
 
@@ -162,7 +172,7 @@ export default function CreateRecordPage() {
   if (loading) {
     return (
       <div className="flex h-[40vh] items-center justify-center">
-        <div className="w-8 h-8 border-3 border-black border-t-transparent rounded-full animate-spin" />
+        <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -172,11 +182,11 @@ export default function CreateRecordPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
         <div className="mb-8">
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-1.5 h-1.5 bg-black rounded-full shadow-[0_0_8px_rgba(0,0,0,0.1)]"></span>
-            <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-black/60">Ledger Entry</p>
+            <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full shadow-[0_0_8px_rgba(79,70,229,0.25)]"></span>
+            <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-indigo-700">Ledger Entry</p>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-black tracking-tight leading-none">New Audit Record</h1>
-          <p className="mt-1 text-xs text-black/60 font-black italic">Create immutable medical history for authorized patients.</p>
+          <h1 className="text-xl sm:text-2xl font-black text-indigo-950 tracking-tight leading-none">New Audit Record</h1>
+          <p className="mt-1 text-xs text-indigo-700/70 font-black italic">Create immutable medical history for authorized patients.</p>
         </div>
 
         <Card title="Record Composition">
@@ -184,31 +194,31 @@ export default function CreateRecordPage() {
             <div className="grid sm:grid-cols-2 gap-4">
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-[9px] font-black uppercase tracking-widest text-black/80">Target Patient ID</label>
+                  <label className="block text-[9px] font-black uppercase tracking-widest text-indigo-900/80">Target Patient</label>
                   <button
                     onClick={fetchPatients}
                     disabled={fetchingPatients}
-                    className="text-[9px] font-black uppercase tracking-widest text-black/40 hover:text-black transition-all flex items-center gap-1 disabled:opacity-50"
+                    className="text-[9px] font-black uppercase tracking-widest text-indigo-600/60 hover:text-indigo-700 transition-all flex items-center gap-1 disabled:opacity-50"
                   >
                     <span className={fetchingPatients ? "animate-spin" : ""}>↻</span> Refresh
                   </button>
                 </div>
                 <Select
                   value={patientId}
-                  className="h-10 text-xs bg-neutral-50/50 border-none focus:ring-black font-bold uppercase tracking-tight"
+                  className="h-10 text-xs bg-indigo-50/50 border-none focus:ring-indigo-500 font-bold uppercase tracking-tight"
                   onChange={(event) => setPatientId(event.target.value)}
                 >
                   <option value="">Select Patient...</option>
-                  {patients.map(pid => (
-                    <option key={pid} value={pid}>{pid}</option>
+                  {patients.map((patient) => (
+                    <option key={patient.id} value={patient.id}>{patient.name}</option>
                   ))}
                 </Select>
               </div>
               <div>
-                <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-black/80">Record Classification</label>
+                <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-indigo-900/80">Record Classification</label>
                 <Select
                   value={recordType}
-                  className="h-10 text-xs bg-neutral-50/50 border-none focus:ring-black font-bold uppercase tracking-tight"
+                  className="h-10 text-xs bg-indigo-50/50 border-none focus:ring-indigo-500 font-bold uppercase tracking-tight"
                   onChange={(event) => setRecordType(event.target.value)}
                 >
                   <option value="">Select Category...</option>
@@ -220,14 +230,14 @@ export default function CreateRecordPage() {
             </div>
 
             <div className="mt-2">
-              <label className="mb-3 block text-[9px] font-black uppercase tracking-widest text-black/80">Record Payload (Integrated Protocol)</label>
+              <label className="mb-3 block text-[9px] font-black uppercase tracking-widest text-indigo-900/80">Record Payload (Integrated Protocol)</label>
               <div className="space-y-3">
                 {keyValues.map((kv, index) => (
-                  <div key={index} className="grid grid-cols-1 sm:grid-cols-[1.5fr_1.5fr_2fr_auto] gap-2 items-end p-4 bg-neutral-50/50 rounded-[2rem] border border-black/[0.03] transition-all hover:bg-white group/row">
+                  <div key={index} className="grid grid-cols-1 sm:grid-cols-[1.5fr_1.5fr_2fr_auto] gap-2 items-end p-4 bg-indigo-50/50 rounded-[2rem] border border-indigo-100 transition-all hover:bg-white group/row">
                     <div>
-                      <label className="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-black/40">Template</label>
+                      <label className="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-indigo-600/60">Template</label>
                       <Select
-                        className="h-9 py-0 px-2 text-[9px] w-full rounded-xl bg-white border-black/5 font-black uppercase tracking-tight shadow-sm"
+                        className="h-9 py-0 px-2 text-[9px] w-full rounded-xl bg-white border-indigo-100 font-black uppercase tracking-tight shadow-sm"
                         value={kv.template || ""}
                         onChange={(e) => {
                           applyTemplateForRow(index, e.target.value);
@@ -240,20 +250,20 @@ export default function CreateRecordPage() {
                       </Select>
                     </div>
                     <div>
-                      <label className="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-black/40">Audit Key</label>
+                      <label className="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-indigo-600/60">Audit Key</label>
                       <Input
                         placeholder="e.g. Hb"
                         value={kv.key}
-                        className="h-9 text-[10px] bg-white border-black/5 font-bold shadow-sm"
+                        className="h-9 text-[10px] bg-white border-indigo-100 font-bold shadow-sm"
                         onChange={(e) => updateKeyValue(index, "key", e.target.value)}
                       />
                     </div>
                     <div>
-                      <label className="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-black/40">Result Value</label>
+                      <label className="mb-1.5 block text-[8px] font-black uppercase tracking-widest text-indigo-600/60">Result Value</label>
                       <Input
                         placeholder="e.g. 13.5 g/dL"
                         value={kv.value}
-                        className="h-9 text-[10px] bg-white border-black/5 font-bold shadow-sm"
+                        className="h-9 text-[10px] bg-white border-indigo-100 font-bold shadow-sm"
                         onChange={(e) => updateKeyValue(index, "value", e.target.value)}
                       />
                     </div>
@@ -271,17 +281,17 @@ export default function CreateRecordPage() {
                 ))}
                 <button
                   onClick={addKeyValue}
-                  className="mt-1 py-3 border border-dashed border-black/10 rounded-2xl text-[10px] uppercase font-black tracking-widest text-black/50 hover:bg-neutral-50 hover:text-black transition-all"
+                  className="mt-1 py-3 border border-dashed border-indigo-200 rounded-2xl text-[10px] uppercase font-black tracking-widest text-indigo-700/60 hover:bg-indigo-50 hover:text-indigo-950 transition-all"
                 >
                   + Add Data Field
                 </button>
               </div>
             </div>
 
-            <div className="pt-4 mt-2 border-t border-black/[0.03]">
+            <div className="pt-4 mt-2 border-t border-indigo-100">
               <Button
                 onClick={handleCreateRecord}
-                className="w-full h-11 text-[11px] font-black uppercase tracking-widest bg-black text-white hover:bg-neutral-800 transition-all shadow-xl shadow-neutral-200 flex items-center justify-center gap-2"
+                className="w-full h-11 text-[11px] font-black uppercase tracking-widest bg-indigo-700 text-white hover:bg-indigo-800 transition-all shadow-xl shadow-indigo-100 flex items-center justify-center gap-2"
                 disabled={saving}
               >
                 {saving ? (

@@ -1,5 +1,12 @@
 import { bigint, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core";
 
+export const app_identities = pgTable("app_identities", {
+  user_id: text("user_id").primaryKey(),
+  role: text("role").notNull(),
+  password_hash: text("password_hash").notNull(),
+  created_at: bigint("created_at", { mode: "number" }).notNull(),
+});
+
 export const medical_records = pgTable("medical_records", {
   id: text("id").primaryKey(),
   patient_id: text("patient_id").notNull(),

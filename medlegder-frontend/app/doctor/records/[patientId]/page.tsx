@@ -16,7 +16,7 @@ type MedicalRecord = {
 
 const RenderPayload = ({ data }: { data: Record<string, unknown> | unknown }) => {
     if (typeof data !== 'object' || data === null) {
-        return <p className="text-xs text-black/90 leading-relaxed p-4 bg-neutral-50 rounded-2xl border border-black/10">{String(data)}</p>;
+        return <p className="text-xs text-indigo-950/90 leading-relaxed p-4 bg-indigo-50 rounded-2xl border border-indigo-100">{String(data)}</p>;
     }
 
     return (
@@ -24,9 +24,9 @@ const RenderPayload = ({ data }: { data: Record<string, unknown> | unknown }) =>
             {Object.entries(data as Record<string, unknown>).map(([key, value]) => {
                 const label = key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').replace(/^\w/, c => c.toUpperCase());
                 return (
-                    <div key={key} className="flex justify-between items-center px-4 py-3 bg-neutral-50/50 border border-black/[0.08] rounded-2xl transition-colors hover:bg-white group/item">
-                        <span className="text-[9px] font-bold text-black/50 uppercase tracking-wider group-hover/item:text-black/70 transition-colors">{label}</span>
-                        <span className="text-[11px] font-extrabold text-black">{String(value)}</span>
+                    <div key={key} className="flex justify-between items-center px-4 py-3 bg-indigo-50/50 border border-indigo-100 rounded-2xl transition-colors hover:bg-white group/item">
+                        <span className="text-[9px] font-bold text-indigo-700/50 uppercase tracking-wider group-hover/item:text-indigo-700 transition-colors">{label}</span>
+                        <span className="text-[11px] font-extrabold text-indigo-950">{String(value)}</span>
                     </div>
                 );
             })}
@@ -78,7 +78,7 @@ export default function PatientRecordsPage({ params }: { params: Promise<{ patie
 
     useEffect(() => {
         const identity = getIdentity();
-        if (!identity || (identity.role !== "doctor" && (identity.role !== "patient" || identity.id !== patientId))) {
+        if (!identity || ((identity.role !== "doctor" && identity.role !== "hospital") && (identity.role !== "patient" || identity.id !== patientId))) {
             router.push("/");
             return;
         }
@@ -96,7 +96,7 @@ export default function PatientRecordsPage({ params }: { params: Promise<{ patie
     if (loading) {
         return (
             <div className="flex h-[60vh] items-center justify-center">
-                <div className="w-8 h-8 border-3 border-black border-t-transparent rounded-full animate-spin" />
+                <div className="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin" />
             </div>
         );
     }
@@ -107,45 +107,45 @@ export default function PatientRecordsPage({ params }: { params: Promise<{ patie
                 <div className="mb-8">
                     <button
                         onClick={() => router.back()}
-                        className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-black/50 hover:text-black transition-colors mb-4 group"
+                        className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-indigo-700/50 hover:text-indigo-700 transition-colors mb-4 group"
                     >
                         <svg className="w-3 h-3 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
                         Back
                     </button>
                     <div className="flex items-center gap-2 mb-1">
-                        <span className="w-1.5 h-1.5 bg-black rounded-full animate-pulse"></span>
-                        <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-black/60">Clinical Record Ledger</p>
+                        <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full animate-pulse"></span>
+                        <p className="text-[9px] font-bold uppercase tracking-[0.3em] text-indigo-700">Clinical Record Ledger</p>
                     </div>
-                    <h1 className="text-xl sm:text-2xl font-black text-black tracking-tight leading-none uppercase">{patientId}</h1>
+                    <h1 className="text-xl sm:text-2xl font-black text-indigo-950 tracking-tight leading-none uppercase">{patientId}</h1>
                 </div>
 
                 <div className="grid gap-6">
                     {records.length === 0 ? (
-                        <div className="border border-dashed border-black/10 rounded-3xl p-20 text-center bg-white/50">
-                            <p className="text-black/30 text-[11px] font-bold uppercase tracking-widest">No records found on the ledger</p>
+                        <div className="border border-dashed border-indigo-200 rounded-3xl p-20 text-center bg-white/50">
+                            <p className="text-indigo-700/30 text-[11px] font-bold uppercase tracking-widest">No records found on the ledger</p>
                         </div>
                     ) : (
                         records.sort((a, b) => b.created_at - a.created_at).map((rec) => (
                             <div
                                 key={rec.id}
-                                className="bg-white border border-black/[0.03] overflow-hidden rounded-[2.5rem] hover:shadow-2xl hover:shadow-neutral-200/50 transition-all group"
+                                className="bg-white border border-indigo-100 overflow-hidden rounded-[2.5rem] hover:shadow-2xl hover:shadow-indigo-100 transition-all group"
                             >
-                                <div className="p-6 border-b border-black/[0.03] bg-neutral-50/30 flex items-center justify-between">
+                                <div className="p-6 border-b border-indigo-100 bg-indigo-50/30 flex items-center justify-between">
                                     <div className="flex items-center gap-4">
-                                        <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-xl shadow-sm group-hover:scale-110 transition-transform border border-black/[0.03]">
+                                        <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-xl shadow-sm group-hover:scale-110 transition-transform border border-indigo-100">
                                             {rec.record_type.toLowerCase().includes('report') ? '📋' : '📄'}
                                         </div>
                                         <div>
-                                            <h4 className="font-black text-black text-sm leading-none uppercase tracking-tight">{rec.record_type}</h4>
+                                            <h4 className="font-black text-indigo-950 text-sm leading-none uppercase tracking-tight">{rec.record_type}</h4>
                                             <div className="flex items-center gap-2 mt-2">
-                                                <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></span>
-                                                <p className="text-[10px] font-bold text-black/60 uppercase tracking-widest">
+                                                <span className="w-1 h-1 bg-indigo-600 rounded-full animate-pulse"></span>
+                                                <p className="text-[10px] font-bold text-indigo-700/60 uppercase tracking-widest">
                                                     {new Date(rec.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                 </p>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="px-3 py-1.5 bg-black text-white text-[8px] font-black uppercase tracking-widest rounded-full">
+                                    <div className="px-3 py-1.5 bg-indigo-700 text-white text-[8px] font-black uppercase tracking-widest rounded-full">
                                         Ledger Verified
                                     </div>
                                 </div>
