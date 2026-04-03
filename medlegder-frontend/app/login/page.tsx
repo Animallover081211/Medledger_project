@@ -6,7 +6,7 @@ import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Select } from "../components/ui/select";
-import { setIdentity, type IdentityRole } from "../../lib/identity";
+import { setIdentity, setToken, type IdentityRole } from "../../lib/identity";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -25,14 +25,15 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const endpoint = role === "doctor" ? "/api/identity/doctor" : "/api/identity/patient";
-
-      const res = await fetch(endpoint, {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId.trim(),
-          "x-user-role": role,
         },
+        body: JSON.stringify({
+          userId: userId.trim(),
+          role,
+        }),
       });
 
       const data = await res.json();
@@ -43,8 +44,17 @@ export default function LoginPage() {
         return;
       }
 
-      setIdentity({ id: userId.trim(), role });
-      router.push(role === "doctor" ? "/doctor" : "/patient");
+      setToken(data.token);
+      setIdentity(data.user);
+      
+      const roleRoutes: Record<string, string> = {
+        patient: "/patient",
+        doctor: "/doctor",
+        hospital: "/hospital",
+        pharmacy: "/pharmacy",
+        regulator: "/regulator",
+      };
+      router.push(roleRoutes[role] || "/");
     } catch {
       setError("Connection error. Is the server running?");
     } finally {
@@ -79,7 +89,10 @@ export default function LoginPage() {
               <label className="mb-1 block text-xs font-black text-black uppercase tracking-widest">Role Identification</label>
               <Select value={role} onChange={(e) => setRole(e.target.value as IdentityRole)}>
                 <option value="patient">Patient</option>
-                <option value="doctor">Doctor</option>
+                <option value="doctor">GP Clinic Doctor</option>
+                <option value="hospital">Hospital Doctor</option>
+                <option value="pharmacy">Pharmacy</option>
+                <option value="regulator">Regulator</option>
               </Select>
             </div>
             {error && <p className="text-xs text-red-600">{error}</p>}

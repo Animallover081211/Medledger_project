@@ -34,10 +34,10 @@ cd "$TEST_NETWORK_DIR"
 
 if [ -f "$CHANNEL_BLOCK" ]; then
   echo "Channel block found. Bringing up Fabric test network without re-creating channel: $CHANNEL_NAME"
-  ./network.sh up -ca
+  ./network.sh up
 else
   echo "Bringing up Fabric test network and creating channel: $CHANNEL_NAME"
-  ./network.sh up createChannel -ca -c "$CHANNEL_NAME"
+  ./network.sh up createChannel -c "$CHANNEL_NAME"
 fi
 
 echo "Deploying chaincode: $CHAINCODE_NAME"
@@ -45,7 +45,7 @@ echo "Deploying chaincode: $CHAINCODE_NAME"
   -ccn "$CHAINCODE_NAME" \
   -ccp "$CHAINCODE_DIR" \
   -ccl go \
-  -ccep "OR('Org1MSP.peer')" \
+  -ccep "AND('HospitalMSP.peer', 'GpClinicMSP.peer')" \
   -c "$CHANNEL_NAME"
 
 echo "Network ready."

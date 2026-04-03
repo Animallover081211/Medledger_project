@@ -1,6 +1,6 @@
 # Windows Setup (Manual Steps)
 
-This guide mirrors the repo scripts but uses manual Windows CMD steps. Do **not** run the `scripts/*.sh` files on Windows CMD.
+This guide mirrors the repo scripts but uses manual Windows CMD steps. Do **not** run the `scripts/*.sh` files directly in Windows CMD.
 
 Replace `<you>` with your actual Windows username in every path (CMD and Git Bash).
 For example, if your username is `Alice`, use `C:\Users\Alice\Desktop\...` and `/c/Users/Alice/Desktop/...`.
@@ -21,6 +21,7 @@ Install these on Windows 10/11:
 - Bun
 - Go
 - Python 3
+- PostgreSQL
 
 Verify in CMD:
 
@@ -32,6 +33,7 @@ go version
 python --version
 git --version
 docker --version
+psql --version
 ```
 
 ## 1) Clone fabric-samples
@@ -90,19 +92,19 @@ docker pull hyperledger/fabric-ca:%CA_VERSION%
 
 ## 3) Start the Fabric test network and deploy chaincode
 
-The Fabric test network uses bash scripts. On Windows CMD, you can invoke Git Bash explicitly.
+The Fabric test network uses bash scripts. On Windows CMD, invoke Git Bash explicitly.
 
 1) Make sure Docker Desktop is running.
 
 2) From CMD, run the network using Git Bash:
 
 ```bat
-"C:\Program Files\Git\bin\bash.exe" -lc "cd /c/Users/<you>/Desktop/hyperledgerassignment/fabric-samples/test-network && ./network.sh up -ca"
-"C:\Program Files\Git\bin\bash.exe" -lc "cd /c/Users/<you>/Desktop/hyperledgerassignment/fabric-samples/test-network && ./network.sh createChannel -c medledger"
-"C:\Program Files\Git\bin\bash.exe" -lc "cd /c/Users/<you>/Desktop/hyperledgerassignment/fabric-samples/test-network && ./network.sh deployCC -ccn medledger -ccp /c/Users/<you>/Desktop/hyperledgerassignment/medledger-chain-go -ccl go -c medledger -ccep \"OR('Org1MSP.peer')\""
+"C:\Program Files\Git\bin\bash.exe" -lc "cd /c/Users/<you>/Desktop/hyperledgerassignment && ./scripts/start_network.sh"
 ```
 
-If the channel already exists, you can skip the `createChannel` line.
+That script now brings up the 4-org network, creates the `medledger` channel if needed, and deploys the chaincode with the current endorsement policy:
+
+`AND('HospitalMSP.peer', 'GpClinicMSP.peer')`
 
 ## 4) Configure the frontend Fabric environment
 
@@ -112,52 +114,43 @@ If the channel already exists, you can skip the `createChannel` line.
 copy "C:\Users\<you>\Desktop\hyperledgerassignment\medlegder-frontend\.env.example" "C:\Users\<you>\Desktop\hyperledgerassignment\medlegder-frontend\.env"
 ```
 
-2) Find the Org1 Admin cert and key paths:
+2) Use the hospital org paths in `medlegder-frontend\.env`:
 
 ```bat
-dir /s /b "C:\Users\<you>\Desktop\hyperledgerassignment\fabric-samples\test-network\organizations" | findstr /I "Admin@org1.example.com\\signcerts"
-dir /s /b "C:\Users\<you>\Desktop\hyperledgerassignment\fabric-samples\test-network\organizations" | findstr /I "Admin@org1.example.com\\keystore"
-```
-
-From those results:
-
-- `FABRIC_USER_CERT_PATH` should point to the `.pem` inside `signcerts`.
-- `FABRIC_USER_KEY_PATH` should point to the single file inside `keystore`.
-- `FABRIC_TLS_CERT_PATH` is:
-
-```
-C:\Users\<you>\Desktop\hyperledgerassignment\fabric-samples\test-network\organizations\peerOrganizations\org1.example.com\tlsca\tlsca.org1.example.com-cert.pem
-```
-
-3) Edit `medlegder-frontend\.env` and set the values (example):
-
-```
-FABRIC_MSP_ID=Org1MSP
+FABRIC_MSP_ID=HospitalMSP
 FABRIC_PEER_ENDPOINT=localhost:7051
-FABRIC_TLS_CERT_PATH=C:\Users\<you>\Desktop\hyperledgerassignment\fabric-samples\test-network\organizations\peerOrganizations\org1.example.com\tlsca\tlsca.org1.example.com-cert.pem
-FABRIC_USER_CERT_PATH=C:\Users\<you>\Desktop\hyperledgerassignment\fabric-samples\test-network\organizations\peerOrganizations\org1.example.com\users\Admin@org1.example.com\msp\signcerts\cert.pem
-FABRIC_USER_KEY_PATH=C:\Users\<you>\Desktop\hyperledgerassignment\fabric-samples\test-network\organizations\peerOrganizations\org1.example.com\users\Admin@org1.example.com\msp\keystore\<private_key_filename>
+FABRIC_TLS_CERT_PATH=C:\Users\<you>\Desktop\hyperledgerassignment\fabric-samples\test-network\organizations\peerOrganizations\hospital.example.com\tlsca\tlsca.hospital.example.com-cert.pem
+FABRIC_USER_CERT_PATH=C:\Users\<you>\Desktop\hyperledgerassignment\fabric-samples\test-network\organizations\peerOrganizations\hospital.example.com\users\Admin@hospital.example.com\msp\signcerts\Admin@hospital.example.com-cert.pem
+FABRIC_USER_KEY_PATH=C:\Users\<you>\Desktop\hyperledgerassignment\fabric-samples\test-network\organizations\peerOrganizations\hospital.example.com\users\Admin@hospital.example.com\msp\keystore\<private_key_filename>
 FABRIC_CHANNEL=medledger
 FABRIC_CHAINCODE=medledger
-FABRIC_ENDORSING_ORGS=Org1MSP
+FABRIC_ENDORSING_ORGS=HospitalMSP,GpClinicMSP
 ```
 
-## 5) Create the local database
+3) Ensure the database settings are Postgres:
 
-From CMD:
+```env
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/medledger
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
+```
+
+## 5) Create the PostgreSQL database
+
+Make sure PostgreSQL is running, then create the database if it does not already exist.
+
+From CMD or PowerShell:
 
 ```bat
-cd /d C:\Users\<you>\Desktop\hyperledgerassignment\medlegder-frontend
-bun install
-bunx drizzle-kit generate
-bunx drizzle-kit push
+psql -U postgres -h localhost -c "CREATE DATABASE medledger;"
 ```
 
-If `.env` does not exist, create it and add:
+If your postgres password is different, update `DATABASE_URL` in `medlegder-frontend\.env`.
 
-```
-DATABASE_URL=file:./local.db
-DATABASE_AUTH_TOKEN=
+Then run the migrations:
+
+```bat
+cd /d C:\Users\<you>\Desktop\hyperledgerassignment
+./scripts/run_db_migrations.sh
 ```
 
 ## 6) Run the web app
@@ -174,24 +167,17 @@ Open `http://localhost:3000`.
 Stop the network:
 
 ```bat
-"C:\Program Files\Git\bin\bash.exe" -lc "cd /c/Users/<you>/Desktop/hyperledgerassignment/fabric-samples/test-network && ./network.sh down"
+"C:\Program Files\Git\bin\bash.exe" -lc "cd /c/Users/<you>/Desktop/hyperledgerassignment && ./scripts/restart_network.sh"
 ```
 
-Full reset (down, up, create channel, deploy chaincode):
-
-```bat
-"C:\Program Files\Git\bin\bash.exe" -lc "cd /c/Users/<you>/Desktop/hyperledgerassignment/fabric-samples/test-network && ./network.sh down"
-"C:\Program Files\Git\bin\bash.exe" -lc "cd /c/Users/<you>/Desktop/hyperledgerassignment/fabric-samples/test-network && ./network.sh up -ca"
-"C:\Program Files\Git\bin\bash.exe" -lc "cd /c/Users/<you>/Desktop/hyperledgerassignment/fabric-samples/test-network && ./network.sh createChannel -c medledger"
-"C:\Program Files\Git\bin\bash.exe" -lc "cd /c/Users/<you>/Desktop/hyperledgerassignment/fabric-samples/test-network && ./network.sh deployCC -ccn medledger -ccp /c/Users/<you>/Desktop/hyperledgerassignment/medledger-chain-go -ccl go -c medledger -ccep \"OR('Org1MSP.peer')\""
-```
+That script does a full down/up/create-channel/deploy cycle for the current 4-org network.
 
 ## 8) Optional: Chaincode CLI sanity test
 
-This test uses the Fabric peer binary and Org1 environment from the test network.
+This test uses the Fabric peer binary and the hospital/gpclinic environment from the test network.
 
 ```bat
-"C:\Program Files\Git\bin\bash.exe" -lc "cd /c/Users/<you>/Desktop/hyperledgerassignment/fabric-samples/test-network && export PATH=/c/Users/<you>/Desktop/hyperledgerassignment/fabric-samples/bin:$PATH && export FABRIC_CFG_PATH=/c/Users/<you>/Desktop/hyperledgerassignment/fabric-samples/config && export $(./setOrgEnv.sh Org1 | xargs) && peer version"
+"C:\Program Files\Git\bin\bash.exe" -lc "cd /c/Users/<you>/Desktop/hyperledgerassignment/fabric-samples/test-network && export PATH=/c/Users/<you>/Desktop/hyperledgerassignment/fabric-samples/bin:$PATH && export FABRIC_CFG_PATH=/c/Users/<you>/Desktop/hyperledgerassignment/fabric-samples/config && export $(./setOrgEnv.sh Hospital | xargs) && peer version"
 ```
 
 If `peer version` works, you can run the test script from Git Bash:
@@ -205,3 +191,5 @@ If `peer version` works, you can run the test script from Git Bash:
 - These steps intentionally avoid running the repo’s `.sh` scripts directly in CMD.
 - You can still use Git Bash to run Fabric’s `network.sh` scripts, since they are required by Fabric’s test network.
 - If Docker is set to Windows containers, switch to Linux containers in Docker Desktop.
+- The repository is now configured for PostgreSQL, not `local.db`.
+- The active 4-org Fabric roles are `HospitalMSP`, `GpClinicMSP`, `PharmacyMSP`, and `RegulatorMSP`.

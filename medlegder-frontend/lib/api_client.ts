@@ -1,19 +1,14 @@
-import {getIdentity} from "./identity";
+import {getToken} from "./identity";
 
 export const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 export const apiFetch = async (path: string, init?: RequestInit) => {
-  const identity = getIdentity();
+  const token = getToken();
 
   const res = await fetch(`${apiBaseUrl}${path}`, {
     headers: {
       "Content-Type": "application/json",
-      ...(identity
-        ? {
-            "X-User-Id": identity.id,
-            "X-User-Role": identity.role,
-          }
-        : {}),
+      ...(token ? {Authorization: `Bearer ${token}`} : {}),
       ...(init?.headers ?? {}),
     },
     ...init,

@@ -6,7 +6,7 @@ import {grantConsent} from "../../../../lib/server/services/consent_service";
 export const runtime = "nodejs";
 
 export const POST = async (request: NextRequest) => {
-  const identity = requireIdentity(request);
+  const identity = await requireIdentity(request);
   if (identity instanceof NextResponse) return identity;
   
   if (identity.role !== "patient") {

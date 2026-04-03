@@ -9,7 +9,7 @@ export const GET = async (
   {params}: {params: Promise<{patientId: string}>}
 ) => {
   const {patientId} = await params;
-  const identity = requireIdentity(request);
+  const identity = await requireIdentity(request);
   if (identity instanceof NextResponse) return identity;
 
   if (identity.role === "patient" && patientId !== identity.userId) {

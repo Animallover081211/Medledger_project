@@ -5,7 +5,7 @@ import { requireIdentity } from "../../_utils";
 export const runtime = "nodejs";
 
 export const GET = async (request: NextRequest) => {
-    const identity = requireIdentity(request);
+    const identity = await requireIdentity(request);
     if (identity instanceof NextResponse) return identity;
 
     if (identity.role !== "doctor") {

@@ -23,4 +23,4 @@ cd "$TEST_NETWORK_DIR"
 
 ./network.sh down
 ./network.sh up createChannel -c "$CHANNEL_NAME"
-./network.sh deployCC -ccn "$CHAINCODE_NAME" -ccp "$CHAINCODE_DIR" -ccl go -c "$CHANNEL_NAME"
+./network.sh deployCC -ccn "$CHAINCODE_NAME" -ccp "$CHAINCODE_DIR" -ccl go -ccep "AND('HospitalMSP.peer', 'GpClinicMSP.peer')" -c "$CHANNEL_NAME"

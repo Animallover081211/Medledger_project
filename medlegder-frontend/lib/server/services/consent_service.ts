@@ -89,7 +89,7 @@ export const getGrantedConsents = async (patientId: string): Promise<ConsentEntr
     }
     
     return Array.from(grantedDoctors.values());
-  } catch (err) {
+  } catch {
     return [];
   } finally {
     repo.close();

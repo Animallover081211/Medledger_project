@@ -9,7 +9,7 @@ export const GET = async (
   { params }: { params: Promise<{ patientId: string }> }
 ) => {
   const { patientId } = await params;
-  const identity = requireIdentity(request);
+  const identity = await requireIdentity(request);
   if (identity instanceof NextResponse) return identity;
 
   // Doctors need consent, Patients can only see their OWN records
@@ -17,10 +17,11 @@ export const GET = async (
     return NextResponse.json({ error: "patients can only view their own records" }, { status: 403 });
   }
 
-  if (identity.role !== "doctor" && identity.role !== "patient") {
+  if (identity.role !== "doctor" && identity.role !== "hospital" && identity.role !== "patient") {
     return NextResponse.json({ error: "unauthorized role" }, { status: 403 });
   }
 
-  const result = await listMedicalRecords(patientId, identity.userId, identity.role === "doctor");
+  const isDoctor = identity.role === "doctor" || identity.role === "hospital";
+  const result = await listMedicalRecords(patientId, identity.userId, isDoctor);
   return NextResponse.json(result);
 };

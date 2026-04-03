@@ -7,13 +7,6 @@ import { Modal } from "../../components/ui/modal";
 import { apiFetch } from "../../../lib/api_client";
 import { getIdentity } from "../../../lib/identity";
 
-type PatientProfile = {
-    id: string;
-    name?: string;
-    lastVisit?: string;
-    recordsCount?: number;
-};
-
 export default function DoctorPatientsPage() {
     const router = useRouter();
     const [loading, setLoading] = useState(true);
@@ -30,10 +23,6 @@ export default function DoctorPatientsPage() {
         title: "",
         message: "",
     });
-
-    const showModal = useCallback((type: "success" | "error" | "info", title: string, message: string | ReactNode) => {
-        setModal({ isOpen: true, type, title, message });
-    }, []);
 
     const closeModal = () => {
         setModal((prev) => ({ ...prev, isOpen: false }));

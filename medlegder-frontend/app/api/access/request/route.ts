@@ -5,11 +5,11 @@ import {requireIdentity} from "../../_utils";
 export const runtime = "nodejs";
 
 export const POST = async (request: NextRequest) => {
-  const identity = requireIdentity(request);
+  const identity = await requireIdentity(request);
   if (identity instanceof NextResponse) return identity;
   
-  if (identity.role !== "doctor") {
-    return NextResponse.json({error: "only doctors can request access"}, {status: 403});
+  if (identity.role !== "doctor" && identity.role !== "hospital") {
+    return NextResponse.json({error: "only doctors or hospital staff can request access"}, {status: 403});
   }
 
   try {
@@ -23,7 +23,7 @@ export const POST = async (request: NextRequest) => {
 };
 
 export const GET = async (request: NextRequest) => {
-  const identity = requireIdentity(request);
+  const identity = await requireIdentity(request);
   if (identity instanceof NextResponse) return identity;
   
   if (identity.role !== "patient") {

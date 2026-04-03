@@ -13,8 +13,8 @@ cd "$APP_DIR"
 if [ ! -f .env ]; then
   echo ".env file not found. Creating from default template..."
   cat <<EOF > .env
-DATABASE_URL=file:./local.db
-DATABASE_AUTH_TOKEN=
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/medledger
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
 EOF
 fi
 
@@ -25,4 +25,4 @@ echo "Generating and pushing database schema..."
 bunx drizzle-kit generate
 bunx drizzle-kit push
 
-echo "Database migrations complete. local.db has been generated."
+echo "Database migrations complete."

@@ -25,7 +25,7 @@ fi
 cd "$TEST_NETWORK_DIR"
 export PATH="$FABRIC_BIN_DIR:$PATH"
 export FABRIC_CFG_PATH="$FABRIC_CFG_DIR"
-export $(./setOrgEnv.sh Org1 | xargs)
+export $(./setOrgEnv.sh Hospital | xargs)
 
 if ! command -v peer >/dev/null 2>&1; then
   echo "Fabric peer binary not found. Run scripts/setup_fabric.sh to download binaries."
@@ -37,12 +37,17 @@ if [ ! -d "$TEST_NETWORK_DIR/organizations" ]; then
   exit 1
 fi
 
-PATIENT_ID="p$(date +%s)"
-DOCTOR_ID="d$(date +%s)"
+TEST_SUFFIX="$(date +%s%N)_$$_${RANDOM}"
+PATIENT_ID="p${TEST_SUFFIX}"
+DOCTOR_ID="d${TEST_SUFFIX}"
 
 invoke() {
   peer chaincode invoke -o localhost:7050 --ordererTLSHostnameOverride orderer.example.com \
     --tls --cafile "$TEST_NETWORK_DIR/organizations/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem" \
+    --peerAddresses localhost:7051 \
+    --tlsRootCertFiles "$TEST_NETWORK_DIR/organizations/peerOrganizations/hospital.example.com/tlsca/tlsca.hospital.example.com-cert.pem" \
+    --peerAddresses localhost:9051 \
+    --tlsRootCertFiles "$TEST_NETWORK_DIR/organizations/peerOrganizations/gpclinic.example.com/tlsca/tlsca.gpclinic.example.com-cert.pem" \
     --waitForEvent --waitForEventTimeout 30s \
     -C medledger -n medledger -c "$1"
 }
@@ -54,7 +59,7 @@ query() {
 echo "Using patient: $PATIENT_ID"
 echo "Using doctor:  $DOCTOR_ID"
 
-echo "NOTE: This script assumes your chaincode endorsement policy allows single-org endorsements."
+echo "NOTE: This script follows the Hospital + GP Clinic endorsement policy."
 
 echo "Registering patient and doctor..."
 invoke "{\"function\":\"RegisterPatient\",\"Args\":[\"${PATIENT_ID}\",\"Alice\"]}"

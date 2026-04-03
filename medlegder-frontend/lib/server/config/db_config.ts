@@ -6,6 +6,5 @@ export const loadDbEnv = () => {
 
   return {
     url,
-    authToken: process.env.DATABASE_AUTH_TOKEN,
   };
 };

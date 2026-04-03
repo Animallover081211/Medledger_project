@@ -9,8 +9,7 @@ import { Card } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Select } from "../components/ui/select";
-import { apiFetch } from "../../lib/api_client";
-import { getIdentity, setIdentity, clearIdentity, type IdentityRole } from "../../lib/identity";
+import { setIdentity, setToken, clearIdentity, type IdentityRole } from "../../lib/identity";
 
 const SPECIALTIES = [
   "General Practice",
@@ -68,19 +67,19 @@ export default function RegisterPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-user-id": userId.trim(),
-          "x-user-role": role,
         },
         body: JSON.stringify({
+          userId: userId.trim(),
           role,
           name: name.trim(),
           ...(role === "doctor" && specialty ? { specialty: specialty.trim() } : {}),
         }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const text = await res.text();
-        if (res.status === 409 || text.includes("already exists")) {
+        if (res.status === 409 || data.error?.includes("already exists")) {
           setModal({
             show: true,
             message: `${role === "patient" ? "Patient" : "Doctor"} ID already exists. Please use a different ID.`,
@@ -89,11 +88,20 @@ export default function RegisterPage() {
           setLoading(false);
           return;
         }
-        throw new Error(text);
+        throw new Error(data.error || "Registration failed");
       }
 
-      setIdentity({ id: userId.trim(), role });
-      router.push(role === "doctor" ? "/doctor" : "/patient");
+      setToken(data.token);
+      setIdentity(data.user);
+      
+      const roleRoutes: Record<string, string> = {
+        patient: "/patient",
+        doctor: "/doctor",
+        hospital: "/hospital",
+        pharmacy: "/pharmacy",
+        regulator: "/regulator",
+      };
+      router.push(roleRoutes[role] || "/");
 
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Registration failed");
@@ -120,14 +128,23 @@ export default function RegisterPage() {
               <label className="mb-1 block text-xs font-medium text-black/70">Role</label>
               <Select value={role} onChange={(e) => setRole(e.target.value as IdentityRole)}>
                 <option value="patient">Patient</option>
-                <option value="doctor">Doctor</option>
+                <option value="doctor">GP Clinic Doctor</option>
+                <option value="hospital">Hospital Doctor</option>
+                <option value="pharmacy">Pharmacy</option>
+                <option value="regulator">Regulator</option>
               </Select>
             </div>
 
             <div>
               <label className="mb-1 block text-xs font-medium text-black/70">Your ID</label>
               <Input
-                placeholder={role === "patient" ? "e.g. patient-001" : "e.g. doctor-001"}
+                placeholder={
+                  role === "patient" ? "e.g. patient-001" :
+                  role === "doctor" ? "e.g. gpdoctor-001" :
+                  role === "hospital" ? "e.g. hospitaldr-001" :
+                  role === "pharmacy" ? "e.g. pharmacy-001" :
+                  "e.g. regulator-001"
+                }
                 value={userId}
                 onChange={(e) => setUserId(e.target.value)}
               />

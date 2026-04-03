@@ -6,6 +6,36 @@ APP_DIR="$WORKDIR/medlegder-frontend"
 ENV_FILE="$APP_DIR/.env"
 export ENV_FILE
 ORG_DIR="$WORKDIR/fabric-samples/test-network/organizations"
+FABRIC_ORG="${FABRIC_ORG:-hospital}"
+
+case "${FABRIC_ORG,,}" in
+  hospital)
+    FABRIC_MSP_ID="HospitalMSP"
+    FABRIC_PEER_ENDPOINT="localhost:7051"
+    FABRIC_DOMAIN="hospital.example.com"
+    ;;
+  gpclinic)
+    FABRIC_MSP_ID="GpClinicMSP"
+    FABRIC_PEER_ENDPOINT="localhost:9051"
+    FABRIC_DOMAIN="gpclinic.example.com"
+    ;;
+  pharmacy)
+    FABRIC_MSP_ID="PharmacyMSP"
+    FABRIC_PEER_ENDPOINT="localhost:11051"
+    FABRIC_DOMAIN="pharmacy.example.com"
+    ;;
+  regulator)
+    FABRIC_MSP_ID="RegulatorMSP"
+    FABRIC_PEER_ENDPOINT="localhost:13051"
+    FABRIC_DOMAIN="regulator.example.com"
+    ;;
+  *)
+    echo "Unknown FABRIC_ORG: ${FABRIC_ORG}"
+    echo "Use hospital, gpclinic, pharmacy, or regulator."
+    exit 1
+    ;;
+esac
+export FABRIC_MSP_ID FABRIC_PEER_ENDPOINT FABRIC_DOMAIN
 
 if [ ! -d "$ORG_DIR" ]; then
   echo "Fabric organizations not found at: $ORG_DIR"
@@ -23,9 +53,9 @@ if [ ! -f "$ENV_FILE" ]; then
   cp "$APP_DIR/.env.example" "$ENV_FILE"
 fi
 
-CERT_PATH="$(find "$ORG_DIR" -path "*Admin@org1.example.com*/signcerts/*.pem" | head -n 1)"
-KEY_PATH="$(find "$ORG_DIR" -path "*Admin@org1.example.com*/keystore/*" -type f | head -n 1)"
-TLS_CERT_PATH="$ORG_DIR/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem"
+CERT_PATH="$ORG_DIR/peerOrganizations/$FABRIC_DOMAIN/users/Admin@$FABRIC_DOMAIN/msp/signcerts/Admin@$FABRIC_DOMAIN-cert.pem"
+KEY_PATH="$ORG_DIR/peerOrganizations/$FABRIC_DOMAIN/users/Admin@$FABRIC_DOMAIN/msp/keystore/priv_sk"
+TLS_CERT_PATH="$ORG_DIR/peerOrganizations/$FABRIC_DOMAIN/tlsca/tlsca.$FABRIC_DOMAIN-cert.pem"
 
 if [ -z "$CERT_PATH" ] || [ ! -f "$CERT_PATH" ]; then
   echo "Admin cert not found. Start the network first."
@@ -42,14 +72,12 @@ if [ ! -f "$TLS_CERT_PATH" ]; then
   exit 1
 fi
 
-export FABRIC_MSP_ID="Org1MSP"
-export FABRIC_PEER_ENDPOINT="localhost:7051"
 export FABRIC_TLS_CERT_PATH="$TLS_CERT_PATH"
 export FABRIC_USER_CERT_PATH="$CERT_PATH"
 export FABRIC_USER_KEY_PATH="$KEY_PATH"
 export FABRIC_CHANNEL="medledger"
 export FABRIC_CHAINCODE="medledger"
-export FABRIC_ENDORSING_ORGS="Org1MSP"
+export FABRIC_ENDORSING_ORGS="HospitalMSP,GpClinicMSP"
 
 python3 - <<'PY'
 import os

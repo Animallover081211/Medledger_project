@@ -13,7 +13,7 @@ export type FabricEnv = {
 
 export const loadFabricEnv = (): FabricEnv => {
   const env = process.env;
-  const mspId = env.FABRIC_MSP_ID ?? "Org1MSP";
+  const mspId = env.FABRIC_MSP_ID ?? "HospitalMSP";
   const peerEndpoint = env.FABRIC_PEER_ENDPOINT ?? "localhost:7051";
   const tlsCertPath = required(env.FABRIC_TLS_CERT_PATH, "FABRIC_TLS_CERT_PATH");
   const certPath = required(env.FABRIC_USER_CERT_PATH, "FABRIC_USER_CERT_PATH");

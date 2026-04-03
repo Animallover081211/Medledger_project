@@ -9,7 +9,7 @@ export const GET = async (
   {params}: {params: Promise<{role: string}>}
 ) => {
   const {role} = await params;
-  const identity = requireIdentity(request);
+  const identity = await requireIdentity(request);
   if (identity instanceof NextResponse) return identity;
 
   if (role !== identity.role) {
@@ -20,9 +20,11 @@ export const GET = async (
     if (role === "patient") {
       const patient = await getPatient(identity.userId);
       return NextResponse.json({name: patient.name, id: patient.id});
-    } else {
+    } else if (role === "doctor" || role === "hospital") {
       const doctor = await getDoctor(identity.userId);
       return NextResponse.json({name: doctor.name, id: doctor.id, specialty: doctor.specialty});
+    } else {
+      return NextResponse.json({id: identity.userId, role: identity.role});
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
