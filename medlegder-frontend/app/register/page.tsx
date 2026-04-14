@@ -10,6 +10,7 @@ import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Select } from "../components/ui/select";
 import { setIdentity, setToken, clearIdentity, type IdentityRole } from "../../lib/identity";
+import { copyToClipboard } from "../../lib/client/clipboard";
 
 const SPECIALTIES = [
   "General Practice",
@@ -56,11 +57,14 @@ export default function RegisterPage() {
   const copyGeneratedId = async () => {
     if (!modal.generatedId) return;
     try {
-      await navigator.clipboard.writeText(modal.generatedId);
+      const copied = await copyToClipboard(modal.generatedId);
+      if (!copied) {
+        throw new Error("Clipboard copy failed");
+      }
       setCopyState("copied");
       window.setTimeout(() => setCopyState("idle"), 1500);
     } catch {
-      setStatus("Could not copy the generated ID");
+      setStatus("Could not copy the generated ID. Copy it manually from the dialog.");
     }
   };
 

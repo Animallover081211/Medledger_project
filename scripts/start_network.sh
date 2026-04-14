@@ -45,7 +45,7 @@ echo "Deploying chaincode: $CHAINCODE_NAME"
   -ccn "$CHAINCODE_NAME" \
   -ccp "$CHAINCODE_DIR" \
   -ccl go \
-  -ccep "AND('HospitalMSP.peer', 'GpClinicMSP.peer')" \
+  -ccep "AND('Org1MSP.peer', 'Org2MSP.peer')" \
   -c "$CHANNEL_NAME"
 
 echo "Network ready."

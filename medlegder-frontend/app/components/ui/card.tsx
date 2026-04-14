@@ -4,10 +4,12 @@ export const Card = ({
   title,
   children,
   className,
+  action,
 }: {
   title?: string;
   children: ReactNode;
   className?: string;
+  action?: ReactNode;
 }) => {
   return (
     <div
@@ -18,7 +20,12 @@ export const Card = ({
         .join(" ")
         .trim()}
     >
-      {title ? <h3 className="text-lg font-black text-black tracking-tight">{title}</h3> : null}
+      {title || action ? (
+        <div className="flex items-start justify-between gap-3">
+          {title ? <h3 className="text-lg font-black text-black tracking-tight">{title}</h3> : <span />}
+          {action ? <div className="shrink-0">{action}</div> : null}
+        </div>
+      ) : null}
       <div className={title ? "mt-4" : ""}>{children}</div>
     </div>
   );

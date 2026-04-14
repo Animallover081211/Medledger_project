@@ -77,6 +77,7 @@ export const POST = async (request: NextRequest) => {
         {status: 409}
       );
     }
-    throw err;
+    const message = err instanceof Error ? err.message : "Registration failed";
+    return NextResponse.json({error: message}, {status: 500});
   }
 };

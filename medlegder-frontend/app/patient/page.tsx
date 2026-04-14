@@ -8,6 +8,7 @@ import { Select } from "../components/ui/select";
 import { Modal } from "../components/ui/modal";
 import { apiFetch } from "../../lib/api_client";
 import { getIdentity } from "../../lib/identity";
+import { copyToClipboard } from "../../lib/client/clipboard";
 
 type AuditLog = {
   id: string;
@@ -71,7 +72,10 @@ export default function PatientPage() {
     const value = patientId ?? "";
     if (!value) return;
     try {
-      await navigator.clipboard.writeText(value);
+      const copied = await copyToClipboard(value);
+      if (!copied) {
+        throw new Error("Clipboard copy failed");
+      }
       setCopyState("copied");
       window.setTimeout(() => setCopyState("idle"), 1500);
     } catch {
@@ -109,6 +113,10 @@ export default function PatientPage() {
       setPendingRequests([]);
     }
   }, []);
+
+  const refreshRequests = async () => {
+    await fetchPendingRequests();
+  };
 
   const fetchDoctors = useCallback(async () => {
     try {
@@ -274,8 +282,26 @@ export default function PatientPage() {
           </div>
         </div>
 
-        {pending.length > 0 && (
-          <Card title="Incoming Requests" className="mb-6 border-emerald-100 bg-emerald-50/10">
+        <Card
+          title="Incoming Requests"
+          className="mb-6 border-emerald-100 bg-emerald-50/10"
+          action={
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              onClick={refreshRequests}
+              className="h-8 px-3 text-[10px] border-emerald-200 bg-white/80 text-emerald-950 hover:bg-white font-black uppercase tracking-widest"
+            >
+              ↻ Refresh
+            </Button>
+          }
+        >
+          {pending.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-[11px] text-black/50 font-bold uppercase tracking-[0.2em]">No incoming requests</p>
+            </div>
+          ) : (
             <div className="space-y-2">
               {uniquePending.map((req) => (
                 <div key={req.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 bg-white rounded-2xl border border-emerald-100 shadow-sm gap-3">
@@ -310,10 +336,10 @@ export default function PatientPage() {
                     </Button>
                   </div>
                 </div>
-              ))}
+                ))}
             </div>
-          </Card>
-        )}
+          )}
+        </Card>
 
         <div className="grid gap-4 sm:grid-cols-2 mb-8">
           <Card title="Manage Consents">

@@ -9,6 +9,7 @@ import { Select } from "../components/ui/select";
 import { Modal } from "../components/ui/modal";
 import { apiFetch } from "../../lib/api_client";
 import { getIdentity } from "../../lib/identity";
+import { copyToClipboard } from "../../lib/client/clipboard";
 
 const IDENTITY_RETRY_DELAY_MS = 250;
 const IDENTITY_RETRY_ATTEMPTS = 5;
@@ -55,7 +56,10 @@ export default function DoctorPage() {
     const value = doctorId ?? "";
     if (!value) return;
     try {
-      await navigator.clipboard.writeText(value);
+      const copied = await copyToClipboard(value);
+      if (!copied) {
+        throw new Error("Clipboard copy failed");
+      }
       setCopyState("copied");
       window.setTimeout(() => setCopyState("idle"), 1500);
     } catch {

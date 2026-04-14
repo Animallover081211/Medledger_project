@@ -6,6 +6,7 @@ import { Modal } from "../../../components/ui/modal";
 import { Select } from "../../../components/ui/select";
 import { apiFetch } from "../../../../lib/api_client";
 import { getIdentity } from "../../../../lib/identity";
+import { copyToClipboard } from "../../../../lib/client/clipboard";
 
 type MedicalRecord = {
     id: string;
@@ -20,7 +21,10 @@ const RenderPayload = ({ data }: { data: Record<string, unknown> | unknown }) =>
 
     const copyValue = async (value: string) => {
         try {
-            await navigator.clipboard.writeText(value);
+            const copied = await copyToClipboard(value);
+            if (!copied) {
+                throw new Error("Clipboard copy failed");
+            }
             setCopyState("copied");
             window.setTimeout(() => setCopyState("idle"), 1500);
         } catch {

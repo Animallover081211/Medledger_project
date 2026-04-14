@@ -1,13 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useCallback, ReactNode } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OrgSidebar, type NavItem } from "../components/layout/org_sidebar";
 import { Card } from "../components/ui/card";
-import { Input } from "../components/ui/input";
-import { Button } from "../components/ui/button";
-import { Modal } from "../components/ui/modal";
 import { apiFetch } from "../../lib/api_client";
 import { getIdentity } from "../../lib/identity";
 
@@ -67,32 +64,10 @@ export default function PharmacyPage() {
   const router = useRouter();
   const [pharmacyId, setPharmacyId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [rxNumber, setRxNumber] = useState("");
-  const [verifying, setVerifying] = useState(false);
   const [recentDispensed, setRecentDispensed] = useState<DispensedRecord[]>([]);
   const [summary, setSummary] = useState<PharmacySummary | null>(null);
   const [loadingRecent, setLoadingRecent] = useState(true);
   const [loadingSummary, setLoadingSummary] = useState(true);
-
-  const [modal, setModal] = useState<{
-    isOpen: boolean;
-    type: "success" | "error" | "info";
-    title: string;
-    message: string | ReactNode;
-  }>({
-    isOpen: false,
-    type: "success",
-    title: "",
-    message: "",
-  });
-
-  const showModal = useCallback((type: "success" | "error" | "info", title: string, message: string | ReactNode) => {
-    setModal({ isOpen: true, type, title, message });
-  }, []);
-
-  const closeModal = () => {
-    setModal((prev) => ({ ...prev, isOpen: false }));
-  };
 
   useEffect(() => {
     const identity = getIdentity();
@@ -123,24 +98,6 @@ export default function PharmacyPage() {
 
     loadSummary();
   }, []);
-
-  const handleVerify = async () => {
-    if (!rxNumber.trim()) {
-      showModal("error", "Missing Rx Number", "Please enter a prescription number");
-      return;
-    }
-    setVerifying(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      showModal("success", "Rx Verified", `Prescription '${rxNumber}' has been verified and is valid for dispensing.`);
-      setRxNumber("");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Verification failed";
-      showModal("error", "Verification Failed", message);
-    } finally {
-      setVerifying(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -190,30 +147,15 @@ export default function PharmacyPage() {
           <div className="grid gap-6 md:grid-cols-2 mb-8">
             <Card title="Verify Prescription">
               <div className="grid gap-4 pt-2">
-                <div>
-                  <label className="mb-1.5 block text-[9px] font-black uppercase tracking-widest text-black/80">Prescription Number</label>
-                  <Input
-                    placeholder="e.g. RX-123456"
-                    value={rxNumber}
-                    className="h-10 text-xs bg-neutral-50/50 border-none focus:ring-purple-600 placeholder:text-black/30"
-                    onChange={(event) => setRxNumber(event.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleVerify()}
-                  />
-                </div>
-                <Button
-                  size="sm"
-                  variant="none"
-                  onClick={handleVerify}
-                  className="h-9 text-[10px] bg-purple-600 text-white font-bold tracking-widest flex items-center justify-center gap-2 rounded-full"
-                  disabled={verifying}
+                <p className="text-[11px] text-black/70 font-medium leading-relaxed">
+                  Open the dedicated verification screen to check a prescription against blockchain records and mark it as dispensed.
+                </p>
+                <Link
+                  href="/pharmacy/verify"
+                  className="inline-flex h-9 items-center justify-center rounded-full bg-purple-600 px-4 text-[10px] font-bold tracking-widest text-white transition-colors hover:bg-purple-700"
                 >
-                  {verifying ? (
-                    <>
-                      <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                      Verifying...
-                    </>
-                  ) : "Verify Prescription"}
-                </Button>
+                  Open Verify Rx
+                </Link>
                 <p className="text-[9px] text-black/60 font-medium italic text-center">Verifies prescription validity against blockchain records.</p>
               </div>
             </Card>
@@ -273,14 +215,6 @@ export default function PharmacyPage() {
           </Card>
         </div>
       </div>
-
-      <Modal
-        isOpen={modal.isOpen}
-        onClose={closeModal}
-        title={modal.title}
-        message={modal.message}
-        type={modal.type}
-      />
     </>
   );
 }

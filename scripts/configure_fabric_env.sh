@@ -10,14 +10,14 @@ FABRIC_ORG="${FABRIC_ORG:-hospital}"
 
 case "${FABRIC_ORG,,}" in
   hospital)
-    FABRIC_MSP_ID="HospitalMSP"
+    FABRIC_MSP_ID="Org1MSP"
     FABRIC_PEER_ENDPOINT="localhost:7051"
-    FABRIC_DOMAIN="hospital.example.com"
+    FABRIC_DOMAIN="org1.example.com"
     ;;
   gpclinic)
-    FABRIC_MSP_ID="GpClinicMSP"
+    FABRIC_MSP_ID="Org2MSP"
     FABRIC_PEER_ENDPOINT="localhost:9051"
-    FABRIC_DOMAIN="gpclinic.example.com"
+    FABRIC_DOMAIN="org2.example.com"
     ;;
   pharmacy)
     FABRIC_MSP_ID="PharmacyMSP"
@@ -77,7 +77,7 @@ export FABRIC_USER_CERT_PATH="$CERT_PATH"
 export FABRIC_USER_KEY_PATH="$KEY_PATH"
 export FABRIC_CHANNEL="medledger"
 export FABRIC_CHAINCODE="medledger"
-export FABRIC_ENDORSING_ORGS="HospitalMSP,GpClinicMSP"
+export FABRIC_ENDORSING_ORGS="Org1MSP,Org2MSP"
 
 python3 - <<'PY'
 import os

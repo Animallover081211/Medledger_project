@@ -81,7 +81,14 @@ export default function CreateRecordPage() {
         apiFetch(role === "hospital" ? "/api/hospital/patients" : "/api/doctor/patients"),
         apiFetch("/api/registry/patients"),
       ]);
-      const grantedIds = new Set((grantedResult.patients || []).map((pid: string) => String(pid)));
+      const grantedPatients = Array.isArray(grantedResult.patients) ? grantedResult.patients : [];
+      const grantedIds = new Set(
+        grantedPatients
+          .map((patient: string | { id?: string }) =>
+            typeof patient === "string" ? patient : patient?.id
+          )
+          .filter((patientId: string | undefined): patientId is string => Boolean(patientId))
+      );
       const registryPatients = Array.isArray(registryResult.patients) ? registryResult.patients : [];
       setPatients(
         registryPatients
@@ -273,7 +280,14 @@ export default function CreateRecordPage() {
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-[9px] font-black uppercase tracking-widest text-indigo-900/80">Target Patient</label>
                   <button
-                    onClick={fetchPatients}
+                    type="button"
+                    onClick={() => {
+                      const identity = getIdentity();
+                      if (!identity || (identity.role !== "doctor" && identity.role !== "hospital")) {
+                        return;
+                      }
+                      void fetchPatients(identity.role as ProviderRole);
+                    }}
                     disabled={fetchingPatients}
                     className="text-[9px] font-black uppercase tracking-widest text-indigo-600/60 hover:text-indigo-700 transition-all flex items-center gap-1 disabled:opacity-50"
                   >
